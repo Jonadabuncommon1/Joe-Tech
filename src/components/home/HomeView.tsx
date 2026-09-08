@@ -3,12 +3,9 @@ import { motion, AnimatePresence, useReducedMotion, type Variants } from 'motion
 import {
   ArrowRight,
   BadgeCheck,
+  ChevronLeft,
   ChevronRight,
   Clock,
-  Copy,
-  Check,
-  Landmark,
-  Mail,
   MapPin,
   MessageCircle,
   Phone,
@@ -26,7 +23,7 @@ import { useAppContext } from '../../store/AppContext';
 import { marketplaceCategories, formatPrice } from '../../data';
 import { GadgetIcon, ProductImage } from '../ui/ProductImage';
 import { HeroVisual } from './HeroVisual';
-import { branches, bankDetails, contacts, site, mailLink, waLink } from '../../config/site';
+import { branches, contacts, site, waLink } from '../../config/site';
 import { Product } from '../../types';
 
 /**
@@ -92,6 +89,126 @@ const testimonials: { name: string; location: string; rating: number; product: s
       "I bought this for my mum as a gift and paid by transfer since I wasn't in Nsukka at the time. They confirmed everything on WhatsApp and had it delivered to her before the weekend. Very reliable people.",
   },
 ];
+
+/**
+ * Testimonials as a swipeable card stack rather than a static grid: one
+ * quote sharp and up front, the next couple peeking blurred behind it. A
+ * decisive swipe (or drag) in either direction discards the front card for
+ * good and brings the next one forward, looping back to the start after the
+ * last, so it reads as a deck you flip through rather than a page of text.
+ */
+const TestimonialCarousel: React.FC<{ items: typeof testimonials }> = ({ items }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const STACK_SIZE = Math.min(3, items.length);
+
+  const advance = useCallback(() => {
+    setActiveIndex((i) => (i + 1) % items.length);
+  }, [items.length]);
+
+  const retreat = useCallback(() => {
+    setActiveIndex((i) => (i - 1 + items.length) % items.length);
+  }, [items.length]);
+
+  return (
+    <div className="mx-auto mt-8 flex max-w-lg flex-col items-center">
+      <div className="relative h-[400px] w-full sm:h-[320px]">
+        <AnimatePresence initial={false}>
+          {Array.from({ length: STACK_SIZE }).map((_, offset) => {
+            const idx = (activeIndex + offset) % items.length;
+            const t = items[idx];
+            const isTop = offset === 0;
+            return (
+              <motion.div
+                key={idx}
+                drag={isTop ? 'x' : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.7}
+                onDragEnd={(_e, info) => {
+                  if (info.offset.x < -80 || info.velocity.x < -400) advance();
+                  else if (info.offset.x > 80 || info.velocity.x > 400) retreat();
+                }}
+                initial={{ opacity: 0, scale: 1 - (STACK_SIZE - 1) * 0.05, y: (STACK_SIZE - 1) * 26 }}
+                animate={{
+                  opacity: offset === 0 ? 1 : 0.95 - offset * 0.12,
+                  scale: 1 - offset * 0.05,
+                  y: offset * 26,
+                  x: 0,
+                  filter: offset === 0 ? 'blur(0px)' : `blur(${1 + offset * 2.5}px)`,
+                }}
+                exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.22 } }}
+                transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                style={{ zIndex: STACK_SIZE - offset }}
+                className={`absolute inset-x-0 top-0 flex h-full flex-col rounded-2xl border p-5 shadow-lg ${
+                  isTop
+                    ? 'cursor-grab touch-pan-y border-jt-ink/8 bg-jt-paper active:cursor-grabbing dark:border-white/10 dark:bg-jt-ink/50'
+                    : 'pointer-events-none border-jt-blue/15 bg-jt-blue/[0.04] dark:border-jt-mint/15 dark:bg-jt-mint/[0.05]'
+                }`}
+              >
+                <Quote className="h-5 w-5 shrink-0 text-jt-blue/30 dark:text-jt-mint/30" />
+                <p className="mt-2 flex-1 overflow-y-auto text-sm leading-relaxed text-jt-ink/80 [scrollbar-width:none] dark:text-jt-steel [&::-webkit-scrollbar]:hidden">
+                  "{t.quote}"
+                </p>
+                <div className="mt-4 flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, starIdx) => (
+                    <Star
+                      key={starIdx}
+                      className={`h-3.5 w-3.5 ${
+                        starIdx < t.rating
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'fill-jt-ink/10 text-jt-ink/10 dark:fill-white/10 dark:text-white/10'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 border-t border-jt-ink/8 pt-3 dark:border-white/10">
+                  <p className="text-sm font-bold text-jt-ink dark:text-white">
+                    {t.name} <span className="font-normal text-jt-ink/50 dark:text-jt-steel">· {t.location}</span>
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-jt-blue dark:text-jt-mint">
+                    Bought: {t.product}
+                  </p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-5 flex items-center gap-4">
+        <button
+          type="button"
+          onClick={retreat}
+          aria-label="Previous testimonial"
+          className="focus-ring flex h-9 w-9 items-center justify-center rounded-full border border-jt-ink/10 text-jt-ink/60 transition-colors hover:border-jt-blue hover:text-jt-blue dark:border-white/15 dark:text-jt-steel dark:hover:border-jt-mint dark:hover:text-jt-mint"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <div className="flex items-center gap-1.5">
+          {items.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActiveIndex(i)}
+              aria-label={`Show testimonial ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all ${
+                i === activeIndex ? 'w-5 bg-jt-blue dark:bg-jt-mint' : 'w-1.5 bg-jt-ink/15 dark:bg-white/15'
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={advance}
+          aria-label="Next testimonial"
+          className="focus-ring flex h-9 w-9 items-center justify-center rounded-full border border-jt-ink/10 text-jt-ink/60 transition-colors hover:border-jt-blue hover:text-jt-blue dark:border-white/15 dark:text-jt-steel dark:hover:border-jt-mint dark:hover:text-jt-mint"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 import { ProductCard } from '../shop/ProductCard';
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -154,42 +271,6 @@ const Section: React.FC<{
     {children}
   </motion.section>
 );
-
-/** One copyable line in the homepage bank-details card. */
-const BankRow: React.FC<{ label: string; value: string; mono?: boolean }> = ({ label, value, mono }) => {
-  const [copied, setCopied] = useState(false);
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // Insecure context or a blocked clipboard, the value is still on screen
-      // to copy by hand.
-    }
-  };
-  return (
-    <button
-      type="button"
-      onClick={copy}
-      className="focus-ring flex w-full items-center justify-between gap-3 rounded-xl bg-jt-ink/5 px-3.5 py-2.5 text-left transition-colors hover:bg-jt-ink/10 dark:bg-white/5 dark:hover:bg-white/10"
-    >
-      <span className="min-w-0">
-        <span className="block text-[10px] uppercase tracking-wider text-jt-ink/50 dark:text-jt-steel">
-          {label}
-        </span>
-        <span className={`block truncate text-sm font-bold text-jt-ink dark:text-white ${mono ? 'font-tech' : ''}`}>
-          {value}
-        </span>
-      </span>
-      {copied ? (
-        <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-      ) : (
-        <Copy className="h-4 w-4 shrink-0 text-jt-ink/40 dark:text-jt-steel" />
-      )}
-    </button>
-  );
-};
 
 const SectionHeading: React.FC<{
   eyebrow: string;
@@ -529,14 +610,14 @@ const Hero: React.FC<{
               className="focus-ring group flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-3xl bg-gradient-to-br from-jt-blue to-jt-blue-deep p-5 text-left text-white"
             >
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-white/70">This week</p>
-                <h2 className="mt-1 font-display text-lg sm:text-xl font-bold">Trending gear, priced to move</h2>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/70">Selling out this week</p>
+                <h2 className="mt-1 font-display text-lg sm:text-xl font-bold">The gear everyone's rushing for</h2>
                 <p className="mt-1 text-xs text-white/75">
-                  The phones, laptops and gaming gear customers are asking for most.
+                  Stock moves fast on these. Grab yours before the next customer does.
                 </p>
               </div>
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-bold text-jt-blue transition-transform group-hover:translate-x-1">
-                Shop trending
+                Grab the deals
                 <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </motion.button>
@@ -709,7 +790,7 @@ export const HomeView: React.FC = () => {
                 Shop by <span className="text-shine">category</span>
               </>
             }
-            subtitle="Eight departments, one store. Tested and backed by reliable warranty."
+            subtitle="Whatever you're after, it's in here somewhere. Every item tested, every purchase backed by warranty."
           />
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -759,7 +840,7 @@ export const HomeView: React.FC = () => {
                     What everyone is <span className="text-shine">asking for</span>
                   </>
                 }
-                subtitle="The latest flagship phones, durable laptops, and verified accessories."
+                subtitle="The flagship phones and laptops customers keep coming back to buy again."
               />
               <motion.button
                 type="button"
@@ -968,7 +1049,7 @@ export const HomeView: React.FC = () => {
       </Section>
 
       {/* ── Testimonials ── */}
-      <Section className="bg-white py-8 dark:bg-jt-ink-soft/30 sm:py-14">
+      <Section className="bg-white py-8 dark:bg-jt-ink-soft/30 sm:py-14 sm:pb-20">
         <div className="mx-auto w-full max-w-7xl px-3.5 sm:px-6">
           <SectionHeading
             center
@@ -978,92 +1059,13 @@ export const HomeView: React.FC = () => {
                 What people are <span className="text-shine">saying</span>
               </>
             }
-            subtitle="Real buyers, real products, unedited beyond fixing typos."
+            subtitle="Real buyers, real products, unedited beyond fixing typos. Swipe through."
           />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={t.name}
-                variants={fadeUp}
-                transition={{ delay: (i % 3) * 0.05 }}
-                className="flex flex-col rounded-2xl border border-jt-ink/8 bg-jt-paper p-5 dark:border-white/10 dark:bg-jt-ink/50"
-              >
-                <Quote className="h-5 w-5 text-jt-blue/30 dark:text-jt-mint/30" />
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-jt-ink/80 dark:text-jt-steel">
-                  "{t.quote}"
-                </p>
-                <div className="mt-4 flex items-center gap-0.5">
-                  {Array.from({ length: 5 }).map((_, starIdx) => (
-                    <Star
-                      key={starIdx}
-                      className={`h-3.5 w-3.5 ${
-                        starIdx < t.rating
-                          ? 'fill-amber-400 text-amber-400'
-                          : 'fill-jt-ink/10 text-jt-ink/10 dark:fill-white/10 dark:text-white/10'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="mt-2 border-t border-jt-ink/8 pt-3 dark:border-white/10">
-                  <p className="text-sm font-bold text-jt-ink dark:text-white">
-                    {t.name} <span className="font-normal text-jt-ink/50 dark:text-jt-steel">· {t.location}</span>
-                  </p>
-                  <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-jt-blue dark:text-jt-mint">
-                    Bought: {t.product}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          <TestimonialCarousel items={testimonials} />
         </div>
       </Section>
 
-      {/* ── Bank Details ── */}
-      <Section className="px-3.5 pb-10 sm:px-6 sm:pb-16">
-        <div className="mx-auto w-full max-w-2xl">
-          <div className="rounded-2xl border border-jt-ink/8 bg-jt-paper p-5 dark:border-white/10 dark:bg-jt-ink/50 sm:p-7">
-            <div className="flex items-center gap-3">
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-jt-blue text-white shadow-md">
-                <Landmark className="h-5 w-5" />
-              </span>
-              <div>
-                <h3 className="font-display text-base font-bold text-jt-ink dark:text-white">
-                  Pay by bank transfer
-                </h3>
-                <p className="text-xs text-jt-ink/55 dark:text-jt-steel">
-                  Then confirm with a receipt on WhatsApp or email so we can arrange your order.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-2.5">
-              <BankRow label="Bank" value={bankDetails.bankName} />
-              <BankRow label="Account Name" value={bankDetails.accountName} />
-              <BankRow label="Account Number" value={bankDetails.accountNumber} mono />
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2.5">
-              <a
-                href={waLink(`Hello Joe Tech, I just made a bank transfer, here is my receipt.`)}
-                target="_blank"
-                rel="noreferrer"
-                className="focus-ring inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1ebd5a]"
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                Send Receipt on WhatsApp
-              </a>
-              <a
-                href={mailLink('Payment receipt', 'Hello Joe Tech,\n\nI just made a bank transfer. Please find my receipt attached.\n\n(Attach your transfer receipt to this email before sending.)')}
-                className="focus-ring inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-jt-ink/15 px-4 py-2.5 text-xs font-bold text-jt-ink hover:bg-jt-ink/5 dark:border-white/15 dark:text-white dark:hover:bg-white/5"
-              >
-                <Mail className="h-3.5 w-3.5" />
-                Send by Email
-              </a>
-            </div>
-          </div>
-        </div>
-      </Section>
     </div>
   );
 };

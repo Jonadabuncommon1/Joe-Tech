@@ -164,21 +164,28 @@ export const ProductUploadForm: React.FC<ProductUploadFormProps> = ({
         }
       }
 
+      // `null`, not `undefined`, for anything the admin can clear. Supabase
+      // sends this object as JSON, and JSON.stringify drops `undefined` keys
+      // entirely, so an update payload built with `undefined` never actually
+      // told the database to clear the column, it just silently left the old
+      // value in place forever. Confirmed live: removing a product's discount
+      // badge appeared to work until the next reload, then it came right
+      // back, because the "removal" was never actually saved.
       const payload: any = {
         name: form.name.trim(),
         category: form.category,
         price,
-        originalPrice,
+        originalPrice: originalPrice ?? null,
         description: form.description.trim() || 'Premium listing from Joe Tech.',
         images: uploadedUrls,
         condition: form.condition,
         isHot: form.isHot,
         isTrending: form.isTrending,
         isNew: form.isNew,
-        badge: form.badge.trim() || undefined,
-        colors: form.colors.length > 0 ? form.colors : undefined,
+        badge: form.badge.trim() || null,
+        colors: form.colors.length > 0 ? form.colors : null,
         inStock: form.inStock,
-        location: form.location || undefined,
+        location: form.location || null,
       };
 
       if (editingId) {

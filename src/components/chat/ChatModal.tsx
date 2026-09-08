@@ -2,21 +2,34 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bot,
+  Mic,
+  Paperclip,
   Send,
   X,
 } from 'lucide-react';
 import { useAppContext } from '../../store/AppContext';
-import { branches, contacts, site, waLink } from '../../config/site';
+import { branches, contacts, site, mailLink, waLink } from '../../config/site';
 import { formatPrice } from '../../data';
 import { Product } from '../../types';
-import { sendChatMessage, ChatMessage } from '../../lib/aiChat';
+import { sendChatMessage, ChatMessage, ChatImage } from '../../lib/aiChat';
 
 interface Message {
   id: string;
   sender: 'user' | 'cisco';
   text: string;
   timestamp: string;
+  imageUrl?: string;
   quickActions?: { label: string; action: () => void }[];
+}
+
+/** Reads a File as base64 without the "data:...;base64," prefix Gemini doesn't want. */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export const ChatWidget: React.FC = () => {
@@ -24,7 +37,90 @@ export const ChatWidget: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Voice input via the browser's built-in speech recognition, not every
+  // browser has it (notably Firefox), so the mic button only renders when
+  // it's actually available rather than showing a control that does nothing.
+  const SpeechRecognitionCtor =
+    typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    if (!SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = 'en-NG';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (e: any) => {
+      const transcript = e.results?.[0]?.[0]?.transcript;
+      if (transcript) setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
+  useEffect(() => () => recognitionRef.current?.stop(), []);
+
+  const handleAttachClick = () => fileInputRef.current?.click();
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // lets picking the same file twice fire onChange again
+    if (!file || !file.type.startsWith('image/')) return;
+    if (attachedImage) URL.revokeObjectURL(attachedImage.previewUrl);
+    setAttachedImage({ file, previewUrl: URL.createObjectURL(file) });
+  };
+
+  const removeAttachedImage = () => {
+    if (attachedImage) URL.revokeObjectURL(attachedImage.previewUrl);
+    setAttachedImage(null);
+  };
+
+  // The phone/browser back button used to close the whole site (or leave it
+  // entirely) while the chat sat open on top, since isOpen had nothing to do
+  // with browser history at all. Opening the chat now pushes a dedicated
+  // history entry, so the first back-press just pops that entry and closes
+  // the chat, the underlying page never moves. This is the same pattern any
+  // mobile menu or dialog uses to make back close itself instead of the app.
+  useEffect(() => {
+    if (!isOpen) return;
+    // Guarded rather than unconditional: React 19 StrictMode runs this
+    // effect twice in dev (mount, cleanup, mount again), and the cleanup
+    // only drops the popstate listener, it doesn't undo the pushState. An
+    // unconditional push would land two history entries per open in dev, so
+    // one back-press would pop the spare entry and leave the chat sitting
+    // open, needing a second press. Skipping the push when we're already
+    // sitting on a chatOpen entry keeps it to exactly one either way.
+    if (!(window.history.state as { chatOpen?: boolean } | null)?.chatOpen) {
+      window.history.pushState({ chatOpen: true }, '');
+    }
+    const onPopState = () => setIsOpen(false);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isOpen]);
+
+  // Closing via the X (or the launcher button while open) goes through here
+  // instead of calling setIsOpen(false) directly, so the history entry
+  // pushed above gets popped straight away rather than left behind, which
+  // would otherwise need an extra, confusing back-press later to skip past.
+  const closeChat = () => {
+    if (window.history.state?.chatOpen) {
+      window.history.back();
+    } else {
+      setIsOpen(false);
+    }
+  };
 
   // Derive latest uploads from live context, sorted explicitly by real
   // upload time rather than trusting the array's incoming order. It used to
@@ -298,12 +394,14 @@ export const ChatWidget: React.FC = () => {
 
   const handleSend = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
-    if (!query) return;
+    const pendingImage = attachedImage;
+    if (!query && !pendingImage) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: query,
+      text: query || 'Is this available?',
+      imageUrl: pendingImage?.previewUrl,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -313,15 +411,41 @@ export const ChatWidget: React.FC = () => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setAttachedImage(null);
     setIsTyping(true);
 
-    // A local rule answers instantly with no network round trip; only a
-    // message nothing local recognizes pays the cost of a real AI call.
-    const local = generateCiscoResponse(query);
-    const response = local ?? {
-      reply: await sendChatMessage(query, history, products),
-      quickActions: fallbackQuickActions(query),
-    };
+    // A photo needs a real look, so it always goes to Gemini rather than the
+    // instant local rules, which can only match keywords, not pixels. Either
+    // way, offer a direct line to a human since neither channel can guarantee
+    // certainty the way actually checking the shelf can.
+    let response: { reply: string; quickActions?: { label: string; action: () => void }[] };
+    if (pendingImage) {
+      const base64 = await fileToBase64(pendingImage.file);
+      const image: ChatImage = { base64, mimeType: pendingImage.file.type };
+      const reply = await sendChatMessage(userMessage.text, history, products, image);
+      const humanNote = `Hello Joe Tech, I have a photo of an item I'd like to ask about: ${userMessage.text}\n\n(Attach the photo to this ${'{channel}'} before sending.)`;
+      response = {
+        reply,
+        quickActions: [
+          {
+            label: '💬 Send Photo on WhatsApp',
+            action: () => window.open(waLink(humanNote.replace('{channel}', 'chat')), '_blank'),
+          },
+          {
+            label: '✉️ Send Photo by Email',
+            action: () => window.open(mailLink('Is this item available?', humanNote.replace('{channel}', 'email')), '_blank'),
+          },
+        ],
+      };
+    } else {
+      // A local rule answers instantly with no network round trip; only a
+      // message nothing local recognizes pays the cost of a real AI call.
+      const local = generateCiscoResponse(query);
+      response = local ?? {
+        reply: await sendChatMessage(query, history, products),
+        quickActions: fallbackQuickActions(query),
+      };
+    }
 
     const ciscoMessage: Message = {
       id: (Date.now() + 1).toString(),
@@ -363,7 +487,7 @@ export const ChatWidget: React.FC = () => {
       <div className="fixed bottom-5 right-5 z-50">
         <motion.button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => (isOpen ? closeChat() : setIsOpen(true))}
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.94 }}
           className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-jt-blue to-jt-blue-soft text-white shadow-[0_8px_25px_rgba(54,38,167,0.45)] border border-jt-mint/30"
@@ -416,7 +540,7 @@ export const ChatWidget: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={closeChat}
                 className="rounded-full p-1.5 text-jt-steel hover:bg-white/10 hover:text-white transition-colors"
               >
                 <X size={18} />
@@ -443,6 +567,13 @@ export const ChatWidget: React.FC = () => {
                           : 'rounded-bl-none border border-jt-ink/8 bg-white text-jt-ink shadow-sm dark:border-white/10 dark:bg-jt-ink-soft dark:text-white'
                       }`}
                     >
+                      {m.imageUrl && (
+                        <img
+                          src={m.imageUrl}
+                          alt="Attached"
+                          className="mb-2 max-h-40 w-full rounded-xl object-cover"
+                        />
+                      )}
                       <p className="whitespace-pre-line">
                         {m.text.replace(/\*\*/g, '').split(/(Cisco)/gi).map((part, index) =>
                           part.toLowerCase() === 'cisco' ? (
@@ -494,24 +625,71 @@ export const ChatWidget: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Attached image preview, shown above the input while it waits to send */}
+            {attachedImage && (
+              <div className="flex items-center gap-2 border-t border-jt-ink/10 bg-white px-2.5 pt-2.5 dark:border-white/10 dark:bg-jt-ink-soft">
+                <img src={attachedImage.previewUrl} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                <p className="flex-1 text-[11px] text-jt-steel">Photo attached, add a note or just send.</p>
+                <button
+                  type="button"
+                  onClick={removeAttachedImage}
+                  className="rounded-full p-1 text-jt-steel hover:bg-jt-ink/5 dark:hover:bg-white/10"
+                  aria-label="Remove attached photo"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
             {/* Input Form */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-center gap-2 border-t border-jt-ink/10 bg-white p-2.5 dark:border-white/10 dark:bg-jt-ink-soft"
+              className={`flex items-center gap-1.5 bg-white p-2.5 dark:bg-jt-ink-soft ${
+                attachedImage ? '' : 'border-t border-jt-ink/10 dark:border-white/10'
+              }`}
             >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelected}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={handleAttachClick}
+                title="Attach a photo of a product"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-jt-steel transition-colors hover:bg-jt-ink/5 hover:text-jt-ink dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <Paperclip size={16} />
+              </button>
+              {SpeechRecognitionCtor && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  title={isListening ? 'Stop listening' : 'Speak your question'}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                    isListening
+                      ? 'animate-pulse bg-red-500 text-white'
+                      : 'text-jt-steel hover:bg-jt-ink/5 hover:text-jt-ink dark:hover:bg-white/10 dark:hover:text-white'
+                  }`}
+                >
+                  <Mic size={16} />
+                </button>
+              )}
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about new arrivals, specs, repairs..."
-                className="flex-1 bg-transparent px-3 py-2 text-xs text-jt-ink placeholder:text-jt-steel focus:outline-none dark:text-white"
+                placeholder={isListening ? 'Listening...' : 'Ask about new arrivals, specs, repairs...'}
+                className="min-w-0 flex-1 bg-transparent px-2 py-2 text-xs text-jt-ink placeholder:text-jt-steel focus:outline-none dark:text-white"
               />
               <button
                 type="submit"
-                disabled={!input.trim()}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-jt-blue text-white transition-opacity disabled:opacity-40 hover:bg-jt-blue-soft dark:bg-jt-mint dark:text-jt-ink"
+                disabled={!input.trim() && !attachedImage}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-jt-blue text-white transition-opacity disabled:opacity-40 hover:bg-jt-blue-soft dark:bg-jt-mint dark:text-jt-ink"
               >
                 <Send size={14} />
               </button>

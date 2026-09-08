@@ -126,11 +126,17 @@ export const Footer = () => {
                 </a>
               </li>
               <li>
+                {/* Shows the actual address rather than a generic "Email
+                    Support" label, matching the phone numbers below: if the
+                    tap doesn't hand off to a mail app (no default mail app
+                    set, or an in-app browser like WhatsApp/Instagram that
+                    silently swallows mailto: taps), the address is still
+                    right there to copy by hand instead of a dead end. */}
                 <a
-                  href="mailto:support@joetech.shop"
+                  href={`mailto:${site.email}`}
                   className="cursor-pointer text-jt-ink/70 transition-colors hover:text-jt-blue dark:text-jt-steel dark:hover:text-jt-mint"
                 >
-                  Email Support
+                  {site.email}
                 </a>
               </li>
               <li>
