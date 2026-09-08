@@ -4,7 +4,7 @@ import { FaApple, FaAndroid, FaWindows, FaLinux, FaGamepad, FaSolarPanel } from 
 import { MdSolarPower, MdCable } from 'react-icons/md';
 import { useAppContext } from '../../store/AppContext';
 import { marketplaceCategories } from '../../data';
-import { branches, contacts, site } from '../../config/site';
+import { contacts, site } from '../../config/site';
 import { LogoLockup } from '../brand/Logo';
 const supportMessage = `Hello 👋
 Welcome to Joe Tech Customer Support.
@@ -75,8 +75,12 @@ export const Footer = () => {
     >
       <BackgroundIcons />
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 grid grid-cols-1 gap-y-10 gap-x-8 md:grid-cols-3 md:gap-y-8 lg:gap-8">
-          <div>
+        {/* Logo/description spans the full row on every width; Categories and
+            Support always sit side by side as their own two columns,
+            including on a phone, matching the desktop arrangement rather
+            than stacking three-deep on a narrow screen. */}
+        <div className="mb-10 grid grid-cols-2 gap-y-10 gap-x-6 sm:gap-x-8 md:grid-cols-3 md:gap-y-8 lg:gap-8">
+          <div className="col-span-2 md:col-span-1">
             <div className="mb-4 flex items-center">
               <LogoLockup className="h-20 md:h-24" />
             </div>
@@ -106,10 +110,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          {/* A visible rule ahead of Support on mobile, where this column
-              stacks directly under Categories, so the last category and the
-              Support heading never read as one running list. */}
-          <div className="border-t border-jt-ink/8 pt-8 dark:border-white/10 md:border-0 md:pt-0">
+          <div>
             <h3 className="mb-4 font-sans text-xs font-bold uppercase tracking-widest text-jt-blue dark:text-jt-mint">
               Support
             </h3>
@@ -160,21 +161,9 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Branch addresses */}
-        <div className="mb-6 grid gap-3 border-t border-jt-ink/8 pt-6 dark:border-white/10 sm:grid-cols-2">
-          {branches.map((b) => (
-            <div key={b.id} className="text-sm text-jt-ink/70 dark:text-jt-steel">
-              <p className="font-bold text-jt-ink dark:text-white">{b.name}</p>
-              <p className="mt-0.5">
-                {b.street}, {b.city}, {b.state}
-              </p>
-              <p className="mt-0.5 text-xs">
-                {b.phone} · {b.hours}
-              </p>
-            </div>
-          ))}
-        </div>
-
+        {/* The branch address block that used to sit here was a condensed
+            repeat of the full "Two branches, real people" section already on
+            the homepage above the footer, removed as redundant clutter. */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-jt-ink/8 pt-5 text-xs font-medium text-jt-ink/60 dark:border-white/10 dark:text-jt-steel md:flex-row">
           <p>&copy; {new Date().getFullYear()} Joe Tech. All rights reserved. · {site.email}</p>
           <div className="flex space-x-6">

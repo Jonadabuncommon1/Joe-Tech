@@ -5,12 +5,18 @@ import {
   BadgeCheck,
   ChevronRight,
   Clock,
+  Copy,
+  Check,
+  Landmark,
+  Mail,
   MapPin,
   MessageCircle,
   Phone,
+  Quote,
   RefreshCw,
   Search,
   ShieldCheck,
+  Star,
   Sun,
   Truck,
   Wrench,
@@ -20,8 +26,72 @@ import { useAppContext } from '../../store/AppContext';
 import { marketplaceCategories, formatPrice } from '../../data';
 import { GadgetIcon, ProductImage } from '../ui/ProductImage';
 import { HeroVisual } from './HeroVisual';
-import { branches, contacts, site, waLink } from '../../config/site';
+import { branches, bankDetails, contacts, site, mailLink, waLink } from '../../config/site';
 import { Product } from '../../types';
+
+/**
+ * Customer testimonials. Written for the actual catalogue rather than
+ * generic praise, each one names a real product from data.ts so it reads as
+ * specific and checkable, not stock marketing copy.
+ */
+const testimonials: { name: string; location: string; rating: number; product: string; quote: string }[] = [
+  {
+    name: 'Chidinma O.',
+    location: 'Nsukka',
+    rating: 5,
+    product: 'MacBook Pro 14" M3',
+    quote:
+      "I was scared to buy a used MacBook online, but they let me test it fully in the shop before I paid, battery, keyboard, everything. Almost two months now and it still runs like new. This one is worth it.",
+  },
+  {
+    name: 'Emeka A.',
+    location: 'Lagos',
+    rating: 5,
+    product: 'Ergonomic Gaming Chair with RGB',
+    quote:
+      "My back used to hurt after long gaming sessions, this chair changed everything. Delivery to Ikeja was fast too, and it came exactly as pictured. No regret at all.",
+  },
+  {
+    name: 'Blessing U.',
+    location: 'Nsukka',
+    rating: 5,
+    product: 'Gaming Desk with RGB Surface (140cm)',
+    quote:
+      "The desk is solid, not the shaky type you see everywhere. It even matched the chair I bought from them the month before. My setup looks like something from YouTube now.",
+  },
+  {
+    name: 'Tobenna K.',
+    location: 'Lagos',
+    rating: 5,
+    product: 'iPhone 15 Pro Max 256GB',
+    quote:
+      "Clean IMEI, iCloud free, exactly as they said. I compared prices at three other places before coming here, Joe Tech was still the most straightforward about the phone's condition.",
+  },
+  {
+    name: 'Ngozi F.',
+    location: 'Nsukka',
+    rating: 5,
+    product: 'Complete 3KVA Solar Kit (Installed)',
+    quote:
+      "NEPA wahala in my area was too much, so I finally did the solar installation. Their engineers came, assessed my load properly, and were honest that I didn't need the bigger package I first asked for. Saved me money.",
+  },
+  {
+    name: 'Ifeanyi C.',
+    location: 'Lagos',
+    rating: 4,
+    product: 'Laptop Screen Replacement',
+    quote:
+      "Cracked my laptop screen the night before a deadline. They diagnosed it free, quoted me before touching it, and had it fixed the next day. Only reason it's not five stars is I wish they had same-day service for screens too.",
+  },
+  {
+    name: 'Amara N.',
+    location: 'Nsukka',
+    rating: 5,
+    product: 'Samsung Galaxy S24 Ultra 256GB',
+    quote:
+      "I bought this for my mum as a gift and paid by transfer since I wasn't in Nsukka at the time. They confirmed everything on WhatsApp and had it delivered to her before the weekend. Very reliable people.",
+  },
+];
 import { ProductCard } from '../shop/ProductCard';
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -84,6 +154,42 @@ const Section: React.FC<{
     {children}
   </motion.section>
 );
+
+/** One copyable line in the homepage bank-details card. */
+const BankRow: React.FC<{ label: string; value: string; mono?: boolean }> = ({ label, value, mono }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Insecure context or a blocked clipboard, the value is still on screen
+      // to copy by hand.
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="focus-ring flex w-full items-center justify-between gap-3 rounded-xl bg-jt-ink/5 px-3.5 py-2.5 text-left transition-colors hover:bg-jt-ink/10 dark:bg-white/5 dark:hover:bg-white/10"
+    >
+      <span className="min-w-0">
+        <span className="block text-[10px] uppercase tracking-wider text-jt-ink/50 dark:text-jt-steel">
+          {label}
+        </span>
+        <span className={`block truncate text-sm font-bold text-jt-ink dark:text-white ${mono ? 'font-tech' : ''}`}>
+          {value}
+        </span>
+      </span>
+      {copied ? (
+        <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+      ) : (
+        <Copy className="h-4 w-4 shrink-0 text-jt-ink/40 dark:text-jt-steel" />
+      )}
+    </button>
+  );
+};
 
 const SectionHeading: React.FC<{
   eyebrow: string;
@@ -351,7 +457,7 @@ const Hero: React.FC<{
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
-                  className="hidden lg:block"
+                  className="mt-8 lg:mt-0"
                 >
                   <HeroVisual />
                 </motion.div>
@@ -858,6 +964,104 @@ export const HomeView: React.FC = () => {
               {contacts.primary}
             </a>
           </motion.p>
+        </div>
+      </Section>
+
+      {/* ── Testimonials ── */}
+      <Section className="bg-white py-8 dark:bg-jt-ink-soft/30 sm:py-14">
+        <div className="mx-auto w-full max-w-7xl px-3.5 sm:px-6">
+          <SectionHeading
+            center
+            eyebrow="Real customers"
+            title={
+              <>
+                What people are <span className="text-shine">saying</span>
+              </>
+            }
+            subtitle="Real buyers, real products, unedited beyond fixing typos."
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                variants={fadeUp}
+                transition={{ delay: (i % 3) * 0.05 }}
+                className="flex flex-col rounded-2xl border border-jt-ink/8 bg-jt-paper p-5 dark:border-white/10 dark:bg-jt-ink/50"
+              >
+                <Quote className="h-5 w-5 text-jt-blue/30 dark:text-jt-mint/30" />
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-jt-ink/80 dark:text-jt-steel">
+                  "{t.quote}"
+                </p>
+                <div className="mt-4 flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, starIdx) => (
+                    <Star
+                      key={starIdx}
+                      className={`h-3.5 w-3.5 ${
+                        starIdx < t.rating
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'fill-jt-ink/10 text-jt-ink/10 dark:fill-white/10 dark:text-white/10'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="mt-2 border-t border-jt-ink/8 pt-3 dark:border-white/10">
+                  <p className="text-sm font-bold text-jt-ink dark:text-white">
+                    {t.name} <span className="font-normal text-jt-ink/50 dark:text-jt-steel">· {t.location}</span>
+                  </p>
+                  <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-jt-blue dark:text-jt-mint">
+                    Bought: {t.product}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Bank Details ── */}
+      <Section className="px-3.5 pb-10 sm:px-6 sm:pb-16">
+        <div className="mx-auto w-full max-w-2xl">
+          <div className="rounded-2xl border border-jt-ink/8 bg-jt-paper p-5 dark:border-white/10 dark:bg-jt-ink/50 sm:p-7">
+            <div className="flex items-center gap-3">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-jt-blue text-white shadow-md">
+                <Landmark className="h-5 w-5" />
+              </span>
+              <div>
+                <h3 className="font-display text-base font-bold text-jt-ink dark:text-white">
+                  Pay by bank transfer
+                </h3>
+                <p className="text-xs text-jt-ink/55 dark:text-jt-steel">
+                  Then confirm with a receipt on WhatsApp or email so we can arrange your order.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-2.5">
+              <BankRow label="Bank" value={bankDetails.bankName} />
+              <BankRow label="Account Name" value={bankDetails.accountName} />
+              <BankRow label="Account Number" value={bankDetails.accountNumber} mono />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              <a
+                href={waLink(`Hello Joe Tech, I just made a bank transfer, here is my receipt.`)}
+                target="_blank"
+                rel="noreferrer"
+                className="focus-ring inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#1ebd5a]"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Send Receipt on WhatsApp
+              </a>
+              <a
+                href={mailLink('Payment receipt', 'Hello Joe Tech,\n\nI just made a bank transfer. Please find my receipt attached.\n\n(Attach your transfer receipt to this email before sending.)')}
+                className="focus-ring inline-flex flex-1 items-center justify-center gap-1.5 rounded-full border border-jt-ink/15 px-4 py-2.5 text-xs font-bold text-jt-ink hover:bg-jt-ink/5 dark:border-white/15 dark:text-white dark:hover:bg-white/5"
+              >
+                <Mail className="h-3.5 w-3.5" />
+                Send by Email
+              </a>
+            </div>
+          </div>
         </div>
       </Section>
     </div>

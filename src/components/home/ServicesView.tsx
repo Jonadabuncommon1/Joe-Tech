@@ -296,6 +296,7 @@ export const ServicesView: React.FC = () => {
                 <div className="mt-4 flex items-center justify-between border-t border-jt-ink/8 pt-3 dark:border-white/10">
                   <span className="font-tech text-sm font-bold text-jt-blue dark:text-jt-mint">
                     from {formatPrice(svc.fromPrice)}
+                    {'priceNote' in svc && svc.priceNote ? ` ${svc.priceNote}` : ''}
                   </span>
                   <span className="text-[11px] text-jt-ink/45 dark:text-jt-steel">
                     {svc.turnaround}

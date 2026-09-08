@@ -799,7 +799,7 @@ export const repairServices = [
   {
     id: 'svc-04',
     name: 'Laptop Screen Replacement',
-    fromPrice: 40000,
+    fromPrice: 18000,
     icon: 'Laptop',
     turnaround: '1–2 days',
     description: 'Cracked, flickering or dead laptop displays replaced, matched to your exact model.',
@@ -832,6 +832,10 @@ export const repairServices = [
     id: 'svc-08',
     name: 'Solar & Inverter Installation',
     fromPrice: 40000,
+    // Shown next to the price itself, not just buried in the description,
+    // so it is clear before a customer even reads further that this covers
+    // labour only, not the panels/inverter/battery being installed.
+    priceNote: 'for workmanship',
     icon: 'Sun',
     turnaround: '1–2 days',
     description: 'Load assessment, mounting, wiring and commissioning by our engineers. Workmanship only, parts and materials are quoted separately.',

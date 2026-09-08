@@ -25,9 +25,11 @@ const SLIDE_MS = 650;
  * corners hug the actual photo and nothing sits marooned in an empty box.
  *
  * It stays cheap: at most four shots are in the DOM (the pair on screen plus
- * the pair leaving), a couple more are warmed ahead, nothing loads or ticks
- * below `lg` where the art is hidden, a background tab does not advance, and
- * only transform/opacity animate so it stays on the compositor.
+ * the pair leaving), a couple more are warmed ahead, a background tab does
+ * not advance, and only transform/opacity animate so it stays on the
+ * compositor. It used to be hidden below `lg` to spare phones the download
+ * entirely; Joe asked for it on phones too, so the only saving left is
+ * capping the DOM/preload count, not the screen size.
  *
  * The outgoing pair is dropped on a timer rather than on an animation-complete
  * callback, and that is deliberate. Browsers throttle requestAnimationFrame to
@@ -75,20 +77,6 @@ function takePair(queue: HeroShot[]): { pair: [HeroShot, HeroShot]; rest: HeroSh
 
 export const HeroVisual: React.FC<{ className?: string }> = ({ className = '' }) => {
   const reduceMotion = useReducedMotion();
-
-  // HomeView only renders this from `lg` up, so on phones we skip the timer and
-  // every image request rather than animating something nobody can see.
-  const [isWide, setIsWide] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const onChange = (e: MediaQueryListEvent) => setIsWide(e.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-
   const queueRef = useRef<HeroShot[]>([]);
 
   /** What the hero is showing: the pair sliding in, and the pair sliding out. */
@@ -103,7 +91,6 @@ export const HeroVisual: React.FC<{ className?: string }> = ({ className = '' })
   });
 
   useEffect(() => {
-    if (!isWide) return;
     const id = window.setInterval(() => {
       // A background tab shouldn't burn through the queue, or pull down images
       // for slides nobody is looking at.
@@ -113,7 +100,7 @@ export const HeroVisual: React.FC<{ className?: string }> = ({ className = '' })
       setFrame((f) => ({ pair, outgoing: f.pair, lap: f.lap + 1 }));
     }, HOLD_MS);
     return () => window.clearInterval(id);
-  }, [isWide]);
+  }, []);
 
   // Retire the outgoing pair once it has had time to slide away, so the hero
   // never holds more than the four slots.
@@ -131,12 +118,11 @@ export const HeroVisual: React.FC<{ className?: string }> = ({ className = '' })
   // the category rule can pull the partner from further down; guessing meant
   // warming a third image that was usually never shown.
   useEffect(() => {
-    if (!isWide) return;
     takePair(queueRef.current).pair.forEach((shot) => {
       const img = new Image();
       img.src = shot.src;
     });
-  }, [isWide, frame.lap]);
+  }, [frame.lap]);
 
   const slideIn = reduceMotion ? { opacity: 0 } : { opacity: 0, x: '38%' };
   const slideOut = reduceMotion ? { opacity: 0 } : { opacity: 0, x: '-38%' };
@@ -150,13 +136,11 @@ export const HeroVisual: React.FC<{ className?: string }> = ({ className = '' })
       {/* The two overlap on a diagonal rather than sitting in equal columns:
           the hero's right-hand column is only ~360px wide, so side by side each
           picture came out barely bigger than a thumbnail. Overlapping lets each
-          one take about two thirds of the width instead of half. */}
-      <div className="relative h-[430px] w-full">
-        {/* Held back below `lg` on purpose: a plain <img src> is fetched even
-            inside a display:none parent, so rendering these would cost phones a
-            download for art they never get to see. */}
-        {isWide &&
-          ([0, 1] as const).map((slot) => (
+          one take about two thirds of the width instead of half. Shorter on a
+          phone, where this sits full-width beneath the hero text instead of
+          alongside it in its own column. */}
+      <div className="relative h-[300px] w-full sm:h-[360px] lg:h-[430px]">
+        {([0, 1] as const).map((slot) => (
             <div
               key={slot}
               className={

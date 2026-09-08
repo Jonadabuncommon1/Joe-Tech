@@ -7,6 +7,7 @@ import {
   Check,
   Copy,
   CreditCard,
+  Mail,
   MessageCircle,
   ShoppingBag,
   Truck,
@@ -17,7 +18,7 @@ import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
 import { ProductImage } from '../ui/ProductImage';
-import { bankDetails, bankDetailsConfigured, branches, waLink } from '../../config/site';
+import { bankDetails, bankDetailsConfigured, branches, site, mailLink, waLink } from '../../config/site';
 
 const fieldBase =
   'w-full rounded-xl border border-jt-ink/12 bg-white px-4 py-3 text-sm text-jt-ink outline-none transition-colors placeholder:text-jt-ink/35 focus:border-jt-blue focus:ring-2 focus:ring-jt-blue/20 dark:border-white/12 dark:bg-jt-ink/60 dark:text-white dark:placeholder:text-jt-steel/50';
@@ -172,6 +173,21 @@ export const CheckoutView: React.FC = () => {
     if (!validate()) return;
     const target = branches.find((b) => b.name === branch) ?? branches[0];
     window.open(waLink(buildOrderMessage(), target.phone), '_blank', 'noopener');
+    setConfirmed(true);
+    clearCart();
+  };
+
+  // Same order details as the WhatsApp receipt, sent as an email instead for
+  // customers who would rather not open WhatsApp. Neither a wa.me link nor a
+  // mailto: link can attach a file (that's a browser restriction, not
+  // something either channel can be made to do), so both ask the customer to
+  // attach the transfer receipt themselves once their email/chat app opens.
+  const confirmByEmail = () => {
+    if (!validate()) return;
+    window.open(
+      mailLink(`Payment receipt, order ${orderRef}`, `${buildOrderMessage()}\n\n(Attach your transfer receipt to this email before sending.)`),
+      '_blank',
+    );
     setConfirmed(true);
     clearCart();
   };
@@ -527,6 +543,18 @@ export const CheckoutView: React.FC = () => {
                     <MessageCircle className="h-4 w-4" />
                     Send Receipt on WhatsApp
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={confirmByEmail}
+                    className="focus-ring mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/15"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Send Receipt by Email
+                  </button>
+                  <p className="mt-2 text-center text-[11px] text-white/60">
+                    Opens your email app addressed to {site.email}, attach your transfer receipt before sending.
+                  </p>
                 </div>
               )}
             </div>
