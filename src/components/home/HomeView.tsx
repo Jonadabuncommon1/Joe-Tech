@@ -209,6 +209,120 @@ const TestimonialCarousel: React.FC<{ items: typeof testimonials }> = ({ items }
   );
 };
 
+/** One real product photo the showcase can slide to. */
+interface ShowcaseShot {
+  src: string;
+  alt: string;
+}
+
+/** Fisher-Yates over a copy, same helper HeroVisual uses. */
+function shuffleShots<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+const CATEGORY_HOLD_MS = 1800;
+const CATEGORY_SLIDE_MS = 500;
+
+/**
+ * The image half of the homepage "Shop by category" banner: a single real
+ * product shot at a time, auto-advancing and swipeable. Deliberately draws
+ * from the actual catalogue (whatever is uploaded and in stock in the admin
+ * panel right now), not the header's curated marketing stills, Joe was
+ * explicit that this section should only ever show real, currently-listed
+ * products, never a generic promo photo. Kept as its own element (not
+ * nested inside the banner's clickable text button) so the drag gesture
+ * here never fights a parent onClick for the same tap the way the
+ * testimonial cards briefly did earlier, dragging a photo to peek at the
+ * next one should never also fire a page navigation.
+ */
+const CategoryShowcase: React.FC<{ items: ShowcaseShot[] }> = ({ items }) => {
+  const reduceMotion = useReducedMotion();
+  const queueRef = React.useRef<ShowcaseShot[]>([]);
+
+  const [frame, setFrame] = useState<{ shot: ShowcaseShot | null; lap: number }>(() => {
+    if (items.length === 0) return { shot: null, lap: 0 };
+    const deck = shuffleShots(items);
+    const shot = deck.shift() as ShowcaseShot;
+    queueRef.current = deck;
+    return { shot, lap: 0 };
+  });
+
+  const advance = useCallback(() => {
+    if (items.length === 0) return;
+    setFrame((f) => {
+      let deck = queueRef.current;
+      if (deck.length === 0) deck = shuffleShots(items);
+      const [shot, ...rest] = deck;
+      queueRef.current = rest;
+      return { shot, lap: f.lap + 1 };
+    });
+  }, [items]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      advance();
+    }, CATEGORY_HOLD_MS);
+    return () => window.clearInterval(id);
+  }, [advance, items.length]);
+
+  useEffect(() => {
+    if (items.length === 0) return;
+    const upcoming = queueRef.current[0] ?? items[0];
+    const img = new Image();
+    img.src = upcoming.src;
+  }, [frame.lap, items]);
+
+  const slideIn = reduceMotion ? { opacity: 0 } : { opacity: 0, x: '100%' };
+  const slideOut = reduceMotion ? { opacity: 0 } : { opacity: 0, x: '-100%' };
+
+  if (!frame.shot) {
+    // No uploaded product has a photo yet, extremely unlikely on a live
+    // store, but a plain empty panel beats a broken image or, worse,
+    // quietly falling back to a stock photo Joe specifically didn't want
+    // here.
+    return (
+      <div className="flex h-[220px] items-center justify-center bg-jt-blue/5 text-xs text-jt-ink/40 dark:bg-jt-mint/5 dark:text-jt-steel sm:h-[300px] lg:h-full lg:min-h-[360px]">
+        New arrivals coming soon
+      </div>
+    );
+  }
+
+  return (
+    // object-contain plus a white mat, not object-cover: product photos
+    // come in whatever aspect ratio they were uploaded in, cover would crop
+    // some of them oddly.
+    <div className="relative h-[220px] overflow-hidden bg-white sm:h-[300px] lg:h-full lg:min-h-[360px]">
+      <AnimatePresence initial={false}>
+        <motion.img
+          key={frame.lap}
+          src={frame.shot.src}
+          alt={frame.shot.alt}
+          decoding="async"
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.6}
+          onDragEnd={(_e, info) => {
+            if (info.offset.x < -60 || info.velocity.x < -400) advance();
+            else if (info.offset.x > 60 || info.velocity.x > 400) advance();
+          }}
+          initial={frame.lap === 0 ? false : slideIn}
+          animate={{ opacity: 1, x: '0%' }}
+          exit={slideOut}
+          transition={{ duration: CATEGORY_SLIDE_MS / 1000, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute inset-0 h-full w-full cursor-grab touch-pan-y object-contain p-4 active:cursor-grabbing sm:p-6"
+        />
+      </AnimatePresence>
+    </div>
+  );
+};
+
 import { ProductCard } from '../shop/ProductCard';
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -431,7 +545,7 @@ const Hero: React.FC<{
             >
               <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-jt-blue/30 blur-[90px]" />
 
-              <div className="relative grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-center">
+              <div className="relative grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
                 <div className="w-full">
                   <motion.span
                     variants={fadeUp}
@@ -732,7 +846,7 @@ export const HomeView: React.FC = () => {
     [setActiveCategory, setCurrentView],
   );
 
-  const { available, featured, hiddenTrendingCount, categoryCounts, hotDeals } = useMemo(() => {
+  const { available, featured, hiddenTrendingCount, categoryCounts, hotDeals, productShots } = useMemo(() => {
     // The homepage's auto-rotating promo rails (Hot Deals, Trending, the
     // category "N in stock" counts) all draw from what a shopper can
     // actually buy right now, an item marked out of stock is left out
@@ -758,6 +872,12 @@ export const HomeView: React.FC = () => {
       categoryCounts: counts,
       // Capped at 8, two dot-pages of four, rather than the whole catalog.
       hotDeals: dealsPool.slice(0, 8),
+      // The "Shop by category" banner's sliding photo, real uploads only,
+      // one per product so the same item doesn't get two turns before
+      // everything else has had one.
+      productShots: available
+        .filter((p) => p.images && p.images.length > 0)
+        .map((p) => ({ src: p.images[0], alt: p.name })),
     };
   }, [products]);
 
@@ -779,52 +899,51 @@ export const HomeView: React.FC = () => {
         onOpenProduct={openProduct}
       />
 
-      {/* ── Categories Grid ── */}
+      {/* ── Shop by Category banner ──
+          One big framed banner rather than eight small tiles: a sliding,
+          swipeable product photo on one side (same picture pool and slide
+          mechanics as the header art) and the pitch on the other, so it
+          reads as a single confident statement instead of a wall of
+          near-identical little cards. The image half and the text half are
+          deliberately separate elements (not one nested inside the other),
+          so a drag on the photo can never also fire the button's page
+          navigation. */}
       <Section className="bg-white py-8 dark:bg-jt-ink-soft/30 sm:py-14">
         <div className="mx-auto w-full max-w-7xl px-3.5 sm:px-6">
-          <SectionHeading
-            center
-            eyebrow="Browse"
-            title={
-              <>
+          <motion.div
+            variants={fadeUp}
+            className="grid overflow-hidden rounded-3xl border border-jt-ink/8 bg-jt-paper shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/60 lg:grid-cols-2"
+          >
+            <CategoryShowcase items={productShots} />
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveCategory(null);
+                setCurrentView('categories');
+                window.scrollTo(0, 0);
+              }}
+              className="focus-ring group relative flex flex-col justify-center p-6 text-left sm:p-10"
+            >
+              <span className="inline-flex w-fit items-center rounded-full bg-jt-blue/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-jt-blue dark:bg-jt-blue/20 dark:text-jt-mint">
+                8 departments, 1 store
+              </span>
+              <h2 className="mt-3 font-display text-2xl font-semibold leading-tight text-jt-ink dark:text-white sm:text-3xl md:text-4xl">
                 Shop by <span className="text-shine">category</span>
-              </>
-            }
-            subtitle="Whatever you're after, it's in here somewhere. Every item tested, every purchase backed by warranty."
-          />
+              </h2>
+              <p className="mt-2 max-w-md text-xs sm:text-sm leading-relaxed text-jt-ink/65 dark:text-jt-steel">
+                Whatever you're after, it's in here somewhere. Every item tested, every purchase backed by
+                warranty.
+              </p>
+              <p className="mt-2 max-w-md font-display text-sm sm:text-base font-bold text-jt-blue dark:text-jt-mint">
+                New stock lands weekly. Come see what just came in.
+              </p>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {marketplaceCategories.map((cat) => (
-              <motion.button
-                type="button"
-                key={cat.id}
-                variants={fadeUp}
-                onClick={() => openCategory(cat.id, cat.isService)}
-                className="focus-ring group relative overflow-hidden rounded-2xl border border-jt-ink/8 bg-white p-4 text-left shadow-sm transition-all duration-300 hover:border-jt-blue/30 dark:border-white/10 dark:bg-jt-ink-soft/60"
-              >
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-[0.07]`}
-                />
-                <span
-                  className={`relative grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-md`}
-                >
-                  <GadgetIcon name={cat.icon} className="h-5 w-5" />
-                </span>
-
-                <h3 className="relative mt-3 font-display text-sm sm:text-base font-bold text-jt-ink dark:text-white">
-                  {cat.name}
-                </h3>
-                <p className="relative mt-1 line-clamp-2 text-xs leading-relaxed text-jt-ink/60 dark:text-jt-steel">
-                  {cat.description}
-                </p>
-
-                <span className="relative mt-3 inline-flex items-center gap-1 text-xs font-bold text-jt-blue dark:text-jt-mint">
-                  {cat.isService ? 'Book repair' : 'Browse'}
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </span>
-              </motion.button>
-            ))}
-          </div>
+              <span className="mt-5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-jt-blue text-white shadow-md transition-transform group-hover:translate-x-1 dark:bg-jt-mint dark:text-jt-ink">
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </button>
+          </motion.div>
         </div>
       </Section>
 
