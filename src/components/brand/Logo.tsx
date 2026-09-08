@@ -23,32 +23,26 @@ export const LogoMark: React.FC<{ className?: string; title?: string }> = ({
 /**
  * The full "Main Logo" lockup — mark plus wordmark, as one image.
  *
- * Joe's artwork ships as a single PNG on a dark navy backdrop, so it is
- * extracted to transparency in two tints: the wordmark is white for dark
- * surfaces and ink for light ones. Both are rendered and swapped by theme
- * rather than filtered, because a CSS filter would recolour the blue mark too.
+ * Single flat PNG, `public/brand/joe-tech-logo.png` (2026 refresh, the
+ * blocky "JOE TECH" wordmark), white background left in rather than
+ * extracted to transparency: both places this renders, the navbar pill and
+ * the footer, are plain white surfaces now that dark mode has been removed
+ * from the site entirely, so the white background sits flush with no
+ * visible seam. There is no dark-surface tint to swap to any more, one
+ * image is enough.
  */
 export const LogoLockup: React.FC<{ className?: string; title?: string }> = ({
   className = 'h-9',
   title = 'Joe Tech',
 }) => (
-  <span className={`relative inline-block ${className}`} style={{ aspectRatio: '1708 / 565' }}>
-    <img
-      src="/brand/joe-tech-logo-dark.png"
-      alt={title}
-      width={1708}
-      height={565}
-      className="absolute inset-0 h-full w-full object-contain object-left dark:hidden"
-    />
-    <img
-      src="/brand/joe-tech-logo.png"
-      alt=""
-      aria-hidden="true"
-      width={1708}
-      height={565}
-      className="absolute inset-0 hidden h-full w-full object-contain object-left dark:block"
-    />
-  </span>
+  <img
+    src="/brand/joe-tech-logo.png"
+    alt={title}
+    width={1200}
+    height={259}
+    className={`object-contain object-left ${className}`}
+    style={{ aspectRatio: '1200 / 259' }}
+  />
 );
 
 interface LogoProps {
