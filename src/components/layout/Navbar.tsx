@@ -191,7 +191,7 @@ export const Navbar = () => {
                 <button
                   type="button"
                   onClick={() => setCurrentView('auth')}
-                  className="btn-primary px-4 py-2 flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider rounded-full shadow-md"
+                  className="btn-primary shrink-0 whitespace-nowrap px-4 py-2 flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider rounded-full shadow-md"
                 >
                   <User size={15} strokeWidth={2.5} />
                   <span>Sign In</span>

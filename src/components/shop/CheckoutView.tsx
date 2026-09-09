@@ -12,6 +12,7 @@ import {
   Truck,
   Store,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
 import { ProductImage } from '../ui/ProductImage';
@@ -100,7 +101,18 @@ export const CheckoutView: React.FC = () => {
     if (fulfilment === 'delivery' && !address.trim())
       next.address = 'Where should we deliver it?';
     setErrors(next);
-    return Object.keys(next).length === 0;
+    const ok = Object.keys(next).length === 0;
+    // The buttons that call this live in the Payment Method card at the
+    // bottom of the page. A failed validation used to just set field errors
+    // and return, invisible from all the way down there, tapping "Send
+    // Receipt" looked completely dead with no feedback at all. Scrolling
+    // back up to the invalid fields plus a toast makes the same failure
+    // obvious instead of silent.
+    if (!ok) {
+      toast.error('Please fill in your name and phone number above first.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    return ok;
   };
 
   const buildOrderMessage = () =>
@@ -124,10 +136,24 @@ export const CheckoutView: React.FC = () => {
       .filter(Boolean)
       .join('\n');
 
+  // A blocked pop-up (some mobile browsers, or a desktop pop-up blocker)
+  // makes window.open silently return null rather than throwing, so without
+  // this check the button looks exactly as "dead" as a failed validation
+  // did, just for a different reason. Only counted as a real confirmation,
+  // clearing the cart, once the tab actually opened.
+  const openOrWarn = (url: string) => {
+    const win = window.open(url, '_blank', 'noopener');
+    if (!win) {
+      toast.error('Your browser blocked the pop-up. Please allow pop-ups for this site and try again.');
+      return false;
+    }
+    return true;
+  };
+
   const confirmOnWhatsApp = () => {
     if (!validate()) return;
     const target = branches.find((b) => b.name === branch) ?? branches[0];
-    window.open(waLink(buildOrderMessage(), target.phone), '_blank', 'noopener');
+    if (!openOrWarn(waLink(buildOrderMessage(), target.phone))) return;
     setConfirmed(true);
     clearCart();
   };
@@ -139,10 +165,10 @@ export const CheckoutView: React.FC = () => {
   // attach the transfer receipt themselves once their email/chat app opens.
   const confirmByEmail = () => {
     if (!validate()) return;
-    window.open(
+    const opened = openOrWarn(
       mailLink(`Payment receipt, order ${orderRef}`, `${buildOrderMessage()}\n\n(Attach your transfer receipt to this email before sending.)`),
-      '_blank',
     );
+    if (!opened) return;
     setConfirmed(true);
     clearCart();
   };

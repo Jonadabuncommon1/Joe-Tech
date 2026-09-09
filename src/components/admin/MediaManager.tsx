@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { UploadCloud, Image as ImageIcon, Search, Folder, Loader2 } from 'lucide-react';
-import { marketplaceCategories } from '../../data';
 import { useAppContext } from '../../store/AppContext';
 import { uploadImage } from '../../lib/supabase';
 
@@ -9,11 +8,16 @@ export const MediaManager = () => {
   const [uploadedMedia, setUploadedMedia] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
+  // Categories are icon+gradient, not photos (`Category` has no `.image`
+  // field), so that used to spread in `undefined` for every one of them,
+  // an `<img src={undefined}>` per category, rendering as a broken/missing
+  // thumbnail no matter what was actually uploaded. Dropped that source
+  // entirely, and `.filter(Boolean)` as a general safety net so a product
+  // with a missing/empty image slot can't do the same thing.
   const allImages = [
     ...uploadedMedia,
-    ...marketplaceCategories.map(c => c.image),
     ...products.flatMap(p => p.images)
-  ].slice(0, 24);
+  ].filter(Boolean).slice(0, 24);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

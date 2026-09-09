@@ -557,11 +557,10 @@ const Hero: React.FC<{
 
                   <motion.h1
                     variants={fadeUp}
-                    className="mt-3 font-display text-2xl font-bold leading-tight sm:text-3xl md:text-4xl"
+                    className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl md:text-5xl"
                   >
-                    Everything tech,
-                    <br />
-                    <span className="text-shine-invert">without the guesswork.</span>
+                    Tired of "as good as new" that isn't? So are we.{' '}
+                    <span className="text-shine-invert">Your next device shouldn't be a gamble.</span>
                   </motion.h1>
 
                   <motion.div variants={fadeUp} className="mt-3 flex flex-wrap items-center gap-1.5 text-xs sm:text-sm">
@@ -581,7 +580,7 @@ const Hero: React.FC<{
                     </span>
                   </motion.div>
 
-                  <motion.p variants={fadeUp} className="mt-3 text-xs sm:text-sm leading-relaxed text-jt-steel">
+                  <motion.p variants={fadeUp} className="mt-3 text-sm sm:text-base leading-relaxed text-jt-steel">
                     {site.shortDescription}
                   </motion.p>
 

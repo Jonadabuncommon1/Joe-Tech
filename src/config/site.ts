@@ -8,8 +8,7 @@
 export const site = {
   name: 'Joe Tech',
   tagline: 'Your Surest Plug.',
-  shortDescription:
-    'Phones, laptops, gaming gear, solar power and expert repairs, sourced, tested and backed by real people in Nsukka and Lagos.',
+  shortDescription: 'Genuine devices, sourced right, no shady deals.',
   url: 'https://joetech.shop',
   email: 'support@joetech.shop',
 } as const;
