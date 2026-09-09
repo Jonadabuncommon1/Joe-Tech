@@ -342,34 +342,21 @@ Which of these would work best for you?`;
 }
 
 
-export interface ChatImage {
-  /** Raw base64, no "data:image/...;base64," prefix. */
-  base64: string;
-  mimeType: string;
-}
-
 export async function sendChatMessage(
   message: string,
   history: ChatMessage[],
   products: Product[],
-  image?: ChatImage,
 ): Promise<string> {
-  // A photo needs a real look, not a keyword match, so skip straight to
-  // Gemini rather than running it through the local FAQ rules below.
-  if (!image) {
-    // 1. Try local FAQ matcher first to give instant, bulletproof replies even if offline/blocked
-    const faqAnswer = findPredefinedAnswer(message, products);
-    if (faqAnswer) {
-      return faqAnswer;
-    }
+  // 1. Try local FAQ matcher first to give instant, bulletproof replies even if offline/blocked
+  const faqAnswer = findPredefinedAnswer(message, products);
+  if (faqAnswer) {
+    return faqAnswer;
   }
 
   const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
   if (!API_KEY || API_KEY.trim() === '') {
-    return image
-      ? "I can't look at photos just yet, that needs a setting turned on here first. In the meantime, send the photo straight to our team on WhatsApp or email and they'll check it for you personally."
-      : "I'm Cisco, here to help you find what you need. Feel free to browse our categories, add items to your cart and check out, or reach our team directly on WhatsApp if you'd rather speak with someone.";
+    return "I'm Cisco, here to help you find what you need. Feel free to browse our categories, add items to your cart and check out, or reach our team directly on WhatsApp if you'd rather speak with someone.";
   }
 
   try {
@@ -382,9 +369,7 @@ export async function sendChatMessage(
     // going stale every time they ship a new generation.
     const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
-    const systemMsg = buildSystemPrompt(products) + (image ? `
-
-The customer has attached a photo, look at it directly. Describe briefly what the photo shows, then check it against the inventory list above for a genuine match, a close alternative, or the right category. Be honest about the limits of comparing a photo to a text list, if you cannot be confident it is the exact item, say so plainly rather than guessing. Either way, always close by inviting them to confirm with our team directly on WhatsApp or by email, since that's the surest way to get a definite yes or no on stock and price.` : '');
+    const systemMsg = buildSystemPrompt(products);
 
     // Format the entire history as a single text prompt to completely bypass Gemini's strict history validation rules
     let promptString = `[SYSTEM INSTRUCTIONS]\n${systemMsg}\n\n[CONVERSATION HISTORY]\n`;
@@ -397,14 +382,7 @@ The customer has attached a photo, look at it directly. Describe briefly what th
     // Add the final prompt for the assistant to reply
     promptString += `Cisco: `;
 
-    // A photo is sent as a second content part alongside the text prompt,
-    // Gemini's flash models are multimodal and read both together.
-    const result = image
-      ? await model.generateContent([
-          { text: promptString },
-          { inlineData: { data: image.base64, mimeType: image.mimeType } },
-        ])
-      : await model.generateContent(promptString);
+    const result = await model.generateContent(promptString);
     const text = result.response.text();
     return text || "I couldn't generate a response. Please try asking again!";
 

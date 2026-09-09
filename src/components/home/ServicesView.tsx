@@ -205,7 +205,7 @@ export const ServicesView: React.FC = () => {
           </motion.div>
 
           {/* Contact strip */}
-          <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <a
               href={`tel:${contacts.primary}`}
               className="focus-ring flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition-colors hover:border-jt-mint/40 hover:bg-jt-mint/10"
@@ -246,7 +246,7 @@ export const ServicesView: React.FC = () => {
           </div>
 
           {/* Branch addresses */}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {branches.map((b) => (
               <div
                 key={b.id}
@@ -276,7 +276,7 @@ export const ServicesView: React.FC = () => {
             needs, and we tell you before we start.
           </p>
 
-          <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-9 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {repairServices.map((svc, i) => (
               <motion.div
                 key={svc.id}
@@ -351,7 +351,7 @@ export const ServicesView: React.FC = () => {
             className="mt-8 space-y-5 rounded-3xl border border-jt-ink/8 bg-jt-paper p-6 shadow-sm dark:border-white/10 dark:bg-jt-ink/50 sm:p-8"
           >
             {/* Name + phone */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="fullName" required>
                   Your name
@@ -395,7 +395,7 @@ export const ServicesView: React.FC = () => {
             </div>
 
             {/* Device */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="deviceType" required>
                   Device type
@@ -493,7 +493,7 @@ export const ServicesView: React.FC = () => {
             </div>
 
             {/* Branch + mode */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="branch" required>
                   Which branch?
@@ -535,7 +535,7 @@ export const ServicesView: React.FC = () => {
             </div>
 
             {/* Date + urgency */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
                 <Label htmlFor="date">Preferred date</Label>
                 <input

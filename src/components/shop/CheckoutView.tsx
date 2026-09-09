@@ -6,15 +6,12 @@ import {
   Building2,
   Check,
   Copy,
-  CreditCard,
   Mail,
   MessageCircle,
   ShoppingBag,
   Truck,
   Store,
-  ShieldCheck,
 } from 'lucide-react';
-import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
 import { ProductImage } from '../ui/ProductImage';
@@ -86,9 +83,7 @@ export const CheckoutView: React.FC = () => {
   const [branch, setBranch] = useState<string>(branches[0].name);
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [paymentMode, setPaymentMode] = useState<'flutterwave' | 'whatsapp'>('flutterwave');
   const [confirmed, setConfirmed] = useState(false);
-  const [paymentSuccessData, setPaymentSuccessData] = useState<any>(null);
 
   const orderRef = useMemo(
     () => `JT-${Date.now().toString(36).toUpperCase().slice(-6)}`,
@@ -102,50 +97,10 @@ export const CheckoutView: React.FC = () => {
     if (!fullName.trim()) next.fullName = 'Please enter your name';
     if (!phone.trim()) next.phone = 'We need a phone number to confirm your order';
     else if (phone.replace(/\D/g, '').length < 10) next.phone = 'That phone number looks too short';
-    if (paymentMode === 'flutterwave' && !email.trim())
-      next.email = 'Email is required for Flutterwave payment receipts';
     if (fulfilment === 'delivery' && !address.trim())
       next.address = 'Where should we deliver it?';
     setErrors(next);
     return Object.keys(next).length === 0;
-  };
-
-  const flwConfig = {
-    public_key: process.env.NEXT_PUBLIC_FLW_PUBLIC_KEY || 'FLWPUBK_TEST-SANDBOXDEMOKEY',
-    tx_ref: orderRef,
-    amount: subtotal,
-    currency: 'NGN',
-    payment_options: 'card,banktransfer,ussd,account',
-    customer: {
-      email: email.trim() || 'orders@joetech.shop',
-      phone_number: phone,
-      name: fullName,
-    },
-    customizations: {
-      title: 'Joe Tech Store',
-      description: `Payment for Order ${orderRef}`,
-      logo: 'https://joetech.shop/logo.png',
-    },
-  };
-
-  const handleFlutterPayment = useFlutterwave(flwConfig);
-
-  const handlePayOnline = () => {
-    if (!validate()) return;
-
-    handleFlutterPayment({
-      callback: (response) => {
-        closePaymentModal();
-        if (response.status === 'successful' || response.status === 'completed') {
-          setPaymentSuccessData(response);
-          setConfirmed(true);
-          clearCart();
-        } else {
-          alert('Payment was not completed. Please try again.');
-        }
-      },
-      onClose: () => {},
-    });
   };
 
   const buildOrderMessage = () =>
@@ -229,20 +184,12 @@ export const CheckoutView: React.FC = () => {
           <Check className="h-10 w-10" strokeWidth={2.5} />
         </motion.span>
         <h1 className="mt-6 font-display text-3xl font-semibold text-jt-ink dark:text-white">
-          Order {orderRef} {paymentSuccessData ? 'Paid & Confirmed' : 'is with us'}
+          Order {orderRef} is with us
         </h1>
         <p className="mt-3 max-w-md text-sm leading-relaxed text-jt-ink/65 dark:text-jt-steel">
-          {paymentSuccessData ? (
-            <>
-              Thank you! Your payment of <strong>{formatPrice(subtotal)}</strong> via Flutterwave was verified. Transaction ID: <span className="font-tech text-jt-blue dark:text-jt-mint font-bold">{paymentSuccessData.transaction_id || paymentSuccessData.tx_ref}</span>. We are processing your order!
-            </>
-          ) : (
-            <>
-              Send your transfer receipt in the WhatsApp chat that just opened, quoting{' '}
-              <strong className="text-jt-blue dark:text-jt-mint">{orderRef}</strong>. We confirm payment
-              and dispatch immediately.
-            </>
-          )}
+          Send your transfer receipt in the WhatsApp chat that just opened, quoting{' '}
+          <strong className="text-jt-blue dark:text-jt-mint">{orderRef}</strong>. We confirm payment
+          and dispatch immediately.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <button
@@ -281,14 +228,23 @@ export const CheckoutView: React.FC = () => {
           <span className="font-tech font-bold text-jt-blue dark:text-jt-mint">{orderRef}</span>
         </p>
 
-        <div className="mt-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        {/* grid-cols-1 (not just bare `grid`) matters here: Tailwind's
+            grid-cols-N utilities size tracks as minmax(0, 1fr), while an
+            unspecified base track defaults to `auto`, sized to fit whatever
+            descendant has the widest min-content. The bank-transfer panel's
+            account name/number rows use `truncate` (white-space: nowrap),
+            whose un-wrapped full-text width was winning that auto-sizing
+            and pushing this column, and everything in it, ~90px past the
+            phone viewport, silently clipped by the page's overflow-x:hidden
+            rather than scrollable, so it just looked cut off and unreachable. */}
+        <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-5">
             <div className="rounded-3xl border border-jt-ink/8 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/50 sm:p-7">
               <h2 className="font-display text-lg font-semibold text-jt-ink dark:text-white">
                 1. Customer Details
               </h2>
 
-              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="name" required>
                     Full name
@@ -325,9 +281,7 @@ export const CheckoutView: React.FC = () => {
               </div>
 
               <div className="mt-5">
-                <Label htmlFor="em" required={paymentMode === 'flutterwave'}>
-                  Email {paymentMode === 'flutterwave' ? '(Required for receipt)' : '(Optional)'}
-                </Label>
+                <Label htmlFor="em">Email (Optional)</Label>
                 <input
                   id="em"
                   type="email"
@@ -466,97 +420,51 @@ export const CheckoutView: React.FC = () => {
 
             <div className="rounded-3xl border border-jt-ink/8 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/50">
               <h3 className="text-sm font-bold uppercase tracking-wider text-jt-ink dark:text-white mb-4">
-                Select Payment Method
+                Payment Method
               </h3>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+
+              {/* Only one payment method now (Pay Online / Flutterwave was
+                  removed), so this is a plain panel rather than a tab picker
+                  between two options. */}
+              <div className="min-w-0 overflow-hidden rounded-2xl bg-jt-blue p-5 text-white">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4 text-jt-lime" />
+                  <h4 className="text-sm font-semibold">Manual Bank Transfer</h4>
+                </div>
+
+                {!bankDetailsConfigured && (
+                  <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 p-2.5 text-xs text-amber-200">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span className="min-w-0 break-words">Set bank account details in <code>src/config/site.ts</code></span>
+                  </div>
+                )}
+
+                <CopyRow label="Bank" value={bankDetails.bankName} />
+                <CopyRow label="Account Name" value={bankDetails.accountName} />
+                <CopyRow label="Account Number" value={bankDetails.accountNumber} mono />
+                <CopyRow label="Narration / Ref" value={orderRef} mono />
+
                 <button
                   type="button"
-                  onClick={() => setPaymentMode('flutterwave')}
-                  className={`flex flex-col items-start p-4 rounded-2xl border-2 transition-all text-left ${
-                    paymentMode === 'flutterwave'
-                      ? 'border-jt-blue bg-jt-blue/5 dark:bg-jt-blue/10 dark:border-jt-mint'
-                      : 'border-jt-ink/10 dark:border-white/10'
-                  }`}
+                  onClick={confirmOnWhatsApp}
+                  className="focus-ring mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-jt-lime px-6 py-3.5 text-sm font-bold text-jt-ink transition-all hover:-translate-y-0.5"
                 >
-                  <CreditCard className={`h-5 w-5 mb-2 ${paymentMode === 'flutterwave' ? 'text-jt-blue dark:text-jt-mint' : 'text-gray-400'}`} />
-                  <p className="font-bold text-sm text-jt-ink dark:text-white">Pay Online</p>
-                  <p className="text-[11px] text-jt-ink/50 dark:text-jt-steel">Card, Transfer, USSD (Flutterwave)</p>
+                  <MessageCircle className="h-4 w-4" />
+                  Send Receipt on WhatsApp
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setPaymentMode('whatsapp')}
-                  className={`flex flex-col items-start p-4 rounded-2xl border-2 transition-all text-left ${
-                    paymentMode === 'whatsapp'
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20'
-                      : 'border-jt-ink/10 dark:border-white/10'
-                  }`}
+                  onClick={confirmByEmail}
+                  className="focus-ring mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/15"
                 >
-                  <MessageCircle className={`h-5 w-5 mb-2 ${paymentMode === 'whatsapp' ? 'text-emerald-600' : 'text-gray-400'}`} />
-                  <p className="font-bold text-sm text-jt-ink dark:text-white">Bank / WhatsApp</p>
-                  <p className="text-[11px] text-jt-ink/50 dark:text-jt-steel">Manual Transfer & Chat Receipt</p>
+                  <Mail className="h-4 w-4" />
+                  Send Receipt by Email
                 </button>
+                <p className="mt-2 text-center text-[11px] text-white/60">
+                  Opens your email app addressed to {site.email}, attach your transfer receipt before sending.
+                </p>
               </div>
-
-              {paymentMode === 'flutterwave' && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
-                    <ShieldCheck className="h-4 w-4" />
-                    <span>Secured 256-bit payment encrypted by Flutterwave</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handlePayOnline}
-                    className="focus-ring inline-flex w-full items-center justify-center gap-2 rounded-full bg-jt-blue px-6 py-4 text-sm font-bold text-white shadow-lg shadow-jt-blue/25 transition-all hover:-translate-y-0.5 hover:bg-jt-blue-soft"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    Pay {formatPrice(subtotal)} Now
-                  </button>
-                </div>
-              )}
-
-              {paymentMode === 'whatsapp' && (
-                <div className="overflow-hidden rounded-2xl bg-jt-blue p-5 text-white">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Building2 className="h-4 w-4 text-jt-lime" />
-                    <h4 className="text-sm font-semibold">Manual Bank Transfer</h4>
-                  </div>
-
-                  {!bankDetailsConfigured && (
-                    <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-400/40 bg-amber-400/10 p-2.5 text-xs text-amber-200">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <span>Set bank account details in <code>src/config/site.ts</code></span>
-                    </div>
-                  )}
-
-                  <CopyRow label="Bank" value={bankDetails.bankName} />
-                  <CopyRow label="Account Name" value={bankDetails.accountName} />
-                  <CopyRow label="Account Number" value={bankDetails.accountNumber} mono />
-                  <CopyRow label="Narration / Ref" value={orderRef} mono />
-
-                  <button
-                    type="button"
-                    onClick={confirmOnWhatsApp}
-                    className="focus-ring mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-jt-lime px-6 py-3.5 text-sm font-bold text-jt-ink transition-all hover:-translate-y-0.5"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    Send Receipt on WhatsApp
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={confirmByEmail}
-                    className="focus-ring mt-2.5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3.5 text-sm font-bold text-white transition-all hover:-translate-y-0.5 hover:bg-white/15"
-                  >
-                    <Mail className="h-4 w-4" />
-                    Send Receipt by Email
-                  </button>
-                  <p className="mt-2 text-center text-[11px] text-white/60">
-                    Opens your email app addressed to {site.email}, attach your transfer receipt before sending.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>

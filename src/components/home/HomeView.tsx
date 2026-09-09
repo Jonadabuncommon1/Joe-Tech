@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { motion, AnimatePresence, useReducedMotion, type Variants } from 'motion/react';
 import {
   ArrowRight,
-  BadgeCheck,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -12,10 +11,8 @@ import {
   Quote,
   RefreshCw,
   Search,
-  ShieldCheck,
   Star,
   Sun,
-  Truck,
   Wrench,
   Flame,
 } from 'lucide-react';
@@ -533,7 +530,7 @@ const Hero: React.FC<{
     // amount on this page — see the comment on Navbar's top offsets.
     <section className="relative w-full max-w-full overflow-hidden bg-jt-paper pb-8 pt-29 text-jt-ink dark:bg-jt-ink dark:text-white sm:pb-14 sm:pt-35">
       <div className="relative mx-auto w-full max-w-7xl px-3.5 sm:px-6">
-        <div className="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px] lg:items-start">
           {/* Main Column */}
           <div className="w-full space-y-4">
             {/* Banner Box */}
@@ -545,7 +542,7 @@ const Hero: React.FC<{
             >
               <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-jt-blue/30 blur-[90px]" />
 
-              <div className="relative grid gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+              <div className="relative grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_1fr] lg:items-start">
                 <div className="w-full">
                   <motion.span
                     variants={fadeUp}
@@ -632,20 +629,6 @@ const Hero: React.FC<{
                       Book a repair
                     </button>
                   </motion.div>
-
-                  {/* Mini Stats */}
-                  <motion.div variants={fadeUp} className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center sm:text-left">
-                    {[
-                      { value: '8', label: 'Categories' },
-                      { value: '2', label: 'Branches' },
-                      { value: 'Free', label: 'Diagnosis' },
-                    ].map((stat) => (
-                      <div key={stat.label}>
-                        <p className="font-display text-base sm:text-lg font-bold text-jt-mint">{stat.value}</p>
-                        <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-jt-steel">{stat.label}</p>
-                      </div>
-                    ))}
-                  </motion.div>
                 </div>
 
                 <motion.div
@@ -694,7 +677,7 @@ const Hero: React.FC<{
             </motion.div>
 
             {/* 3 Promos Grid */}
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {PROMOS.map(({ icon: Icon, title, detail }) => (
                 <motion.div
                   key={title}
@@ -791,25 +774,6 @@ const Hero: React.FC<{
               See all
             </button>
           </motion.div>
-        </div>
-
-        {/* Feature Badges */}
-        <div className="relative mt-4 w-full">
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 rounded-2xl border border-jt-ink/10 bg-jt-ink/[0.02] p-3.5 dark:border-white/10 dark:bg-white/5 lg:grid-cols-4">
-            {[
-              { icon: BadgeCheck, text: 'Tested devices' },
-              { icon: ShieldCheck, text: 'Store warranty' },
-              { icon: Truck, text: 'Nationwide delivery' },
-              { icon: Clock, text: 'Same-day repairs' },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-2">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-jt-blue/10 dark:bg-jt-mint/15">
-                  <Icon className="h-3.5 w-3.5 text-jt-blue dark:text-jt-mint" />
-                </span>
-                <p className="text-[11px] font-medium text-jt-ink/70 dark:text-jt-steel truncate">{text}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     </section>
@@ -912,7 +876,7 @@ export const HomeView: React.FC = () => {
         <div className="mx-auto w-full max-w-7xl px-3.5 sm:px-6">
           <motion.div
             variants={fadeUp}
-            className="grid overflow-hidden rounded-3xl border border-jt-ink/8 bg-jt-paper shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/60 lg:grid-cols-2"
+            className="grid grid-cols-1 overflow-hidden rounded-3xl border border-jt-ink/8 bg-jt-paper shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/60 lg:grid-cols-2"
           >
             <CategoryShowcase items={productShots} />
 
@@ -1013,7 +977,7 @@ export const HomeView: React.FC = () => {
         >
           <div className="pointer-events-none absolute inset-0 circuit-grid opacity-40" />
 
-          <div className="relative grid items-center gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="relative grid grid-cols-1 items-center gap-6 lg:grid-cols-[1.3fr_0.7fr]">
             <div>
               <motion.span
                 className="inline-flex items-center gap-1.5 rounded-full bg-jt-lime/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-jt-lime"
@@ -1098,7 +1062,7 @@ export const HomeView: React.FC = () => {
             subtitle="Come and test the device before you pay. Or call ahead and we will have it ready."
           />
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {branches.map((branch) => (
               <motion.div
                 key={branch.id}

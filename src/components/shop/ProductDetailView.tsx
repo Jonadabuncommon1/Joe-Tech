@@ -198,7 +198,10 @@ export const ProductDetailView = () => {
               </div>
             </div>
 
-            <div className="prose prose-sm text-gray-300 mb-10 leading-relaxed max-w-none font-medium">
+            {/* Was text-gray-300, nearly unreadable against the white card,
+                the opposite of the bold, high-contrast spec text every
+                other marketplace (Jumia, Temu) uses on its product page. */}
+            <div className="prose prose-sm text-jt-ink mb-10 leading-relaxed max-w-none font-medium">
               <p>{product.description}</p>
               
               {(product.location || product.year || product.mileage) && (
