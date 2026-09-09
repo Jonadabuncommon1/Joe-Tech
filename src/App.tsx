@@ -1,4 +1,5 @@
 import React from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { AppProvider, useAppContext } from './store/AppContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -32,6 +33,23 @@ const LoadingView = () => (
 
 function AppContent() {
   const { currentView, isAdminAuthenticated, loadingAuth } = useAppContext();
+
+  // One row per visit, fired once on mount regardless of how currentView
+  // changes afterwards, not once per in-app navigation, this is a "did
+  // someone land on the site" log, not a full pageview-by-pageview
+  // tracker. Reaches api/track-visit.ts, a real server, since that's the
+  // only place a visitor's actual IP address can be read from at all, no
+  // client-side script can see it. Fire-and-forget, deliberately not
+  // awaited: a slow or failed request here must never delay or break the
+  // page for a real visitor.
+  React.useEffect(() => {
+    fetch('/api/track-visit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: currentView, referrer: document.referrer }),
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (currentView === 'admin') {
     if (loadingAuth) return <LoadingView />;
@@ -84,6 +102,7 @@ function App() {
       {showSplash && <SplashScreen onComplete={hideSplash} />}
       <AppContent />
       <Toaster position="top-right" />
+      <Analytics />
     </AppProvider>
   );
 }
