@@ -489,6 +489,20 @@ const PROMOS = [
   },
 ];
 
+/**
+ * Time-of-day greeting for the hero. `getHours()` is the visitor's own
+ * local time (plain client-side Date), so it follows their timezone with
+ * nothing to configure. First name only when we have a display name, just
+ * "Good morning" on its own otherwise (signed out, or signed up without a
+ * name).
+ */
+function heroGreeting(displayName?: string | null): string {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = displayName?.trim().split(/\s+/)[0];
+  return firstName ? `${part}, ${firstName}` : part;
+}
+
 const Hero: React.FC<{
   onShop: () => void;
   onRepairs: () => void;
@@ -498,6 +512,7 @@ const Hero: React.FC<{
   hotDeals: Product[];
   onOpenProduct: (p: Product) => void;
 }> = ({ onShop, onRepairs, onSearch, onCategory, categoryCounts, hotDeals, onOpenProduct }) => {
+  const { user } = useAppContext();
   const [index, setIndex] = useState(0);
   const [query, setQuery] = useState('');
   const reduceMotion = useReducedMotion();
@@ -552,9 +567,16 @@ const Hero: React.FC<{
                     Online
                   </motion.span>
 
+                  <motion.p
+                    variants={fadeUp}
+                    className="mt-3 text-[13px] font-medium text-jt-mint"
+                  >
+                    {heroGreeting(user?.displayName)}
+                  </motion.p>
+
                   <motion.h1
                     variants={fadeUp}
-                    className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl md:text-5xl"
+                    className="mt-2 font-display text-3xl font-bold leading-tight sm:text-4xl md:text-5xl"
                   >
                     Tired of "as good as new" that isn't? So are we.{' '}
                     <span className="text-shine-invert">Your next device shouldn't be a gamble.</span>
