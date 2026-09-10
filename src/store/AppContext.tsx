@@ -421,7 +421,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         (i) =>
           i.product.id === item.product.id &&
           i.selectedSize === item.selectedSize &&
-          i.selectedColor === item.selectedColor
+          i.selectedColor === item.selectedColor &&
+          i.selectedVariant?.label === item.selectedVariant?.label
       );
       if (existing) {
         return prev.map((i) =>

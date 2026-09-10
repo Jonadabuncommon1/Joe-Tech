@@ -1,4 +1,4 @@
-import { Category, Product } from './types';
+import { Category, Product, CartItem } from './types';
 
 /**
  * Joe Tech product categories.
@@ -847,3 +847,31 @@ export const formatPrice = (price: number) =>
   `₦${price.toLocaleString('en-NG', { maximumFractionDigits: 0 })}`;
 
 export const getCategoryById = (id: string) => marketplaceCategories.find((c) => c.id === id);
+
+/** True once a product has at least one priced variant (e.g. storage size). */
+export const hasVariants = (product: Product) => !!product.variants && product.variants.length > 0;
+
+/**
+ * The price to show for a product before any variant is picked: the
+ * cheapest variant's price when it has variants, otherwise the flat price.
+ * Everywhere a product is listed (cards, admin tables, the AI chat's
+ * inventory list) shows this "from" price rather than the flat one, so it
+ * never lies by quoting the base price of a product that actually starts
+ * cheaper (or, if the admin left the base price stale, more expensive).
+ */
+export const getDisplayPrice = (product: Product): number =>
+  hasVariants(product) ? Math.min(...product.variants!.map((v) => v.price)) : product.price;
+
+/** The highest variant price, for a "from X to Y" range in the AI chat's inventory list. */
+export const getMaxVariantPrice = (product: Product): number =>
+  hasVariants(product) ? Math.max(...product.variants!.map((v) => v.price)) : product.price;
+
+/** A cart line's real price is its chosen variant's, falling back to the
+ *  product's flat price for items with no variants. Every cart/checkout
+ *  total must read the price through this, never `item.product.price`
+ *  directly, or a variant pick silently gets ignored in the math. */
+export const getCartItemPrice = (item: CartItem): number =>
+  item.selectedVariant?.price ?? item.product.price;
+
+export const getCartItemOriginalPrice = (item: CartItem): number | undefined =>
+  item.selectedVariant ? item.selectedVariant.originalPrice : item.product.originalPrice;

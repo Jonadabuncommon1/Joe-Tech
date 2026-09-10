@@ -1,8 +1,8 @@
 import React from 'react';
 import { Product } from '../../types';
-import { formatPrice } from '../../data';
+import { formatPrice, getDisplayPrice, hasVariants } from '../../data';
 import { motion } from 'motion/react';
-import { Ban, ShoppingBag, Zap, MessageCircle } from 'lucide-react';
+import { Ban, ShoppingBag, Zap, MessageCircle, ListFilter } from 'lucide-react';
 import { useAppContext } from '../../store/AppContext';
 import { ProductImage } from '../ui/ProductImage';
 
@@ -17,6 +17,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   // all, so treat only an explicit `false` as unavailable, everything else
   // (true or unset) reads as in stock.
   const outOfStock = product.inStock === false;
+  const variantProduct = hasVariants(product);
 
   const handleView = () => {
     setActiveProductId(product.id);
@@ -24,9 +25,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     window.scrollTo(0, 0);
   };
 
+  // A card can't know which storage/variant the shopper wants, so quick-add
+  // only ever adds a plain product straight to cart. A variant product opens
+  // the detail page instead, same as tapping the card itself, so the price
+  // shown always matches the option they actually pick.
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (outOfStock) return;
+    if (variantProduct) {
+      handleView();
+      return;
+    }
     addToCart({
       product,
       quantity: 1,
@@ -90,14 +99,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                 <span>Out of Stock</span>
               </span>
             ) : (
-              <button 
+              <button
                 type="button"
                 onClick={handleQuickAdd}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-jt-ink px-3 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-jt-blue dark:bg-white dark:text-jt-ink dark:hover:bg-jt-mint"
-                title="Add to cart"
+                title={variantProduct ? 'Choose an option' : 'Add to cart'}
               >
-                <ShoppingBag className="h-3.5 w-3.5" />
-                <span>Add to Cart</span>
+                {variantProduct ? (
+                  <>
+                    <ListFilter className="h-3.5 w-3.5" />
+                    <span>Select Options</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    <span>Add to Cart</span>
+                  </>
+                )}
               </button>
             )}
 
@@ -144,13 +162,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             the card, which used to push "In Stock" out past the right edge
             whenever a discounted price made the pair too wide for one line. */}
         <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-          <span className="font-tech text-base font-bold text-jt-blue dark:text-jt-mint">
-            {formatPrice(product.price)}
-          </span>
-          {!!product.originalPrice && product.originalPrice > product.price && (
-            <span className="font-tech text-[11px] text-jt-ink/40 line-through dark:text-jt-steel/70">
-              {formatPrice(product.originalPrice)}
-            </span>
+          {variantProduct ? (
+            <>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-jt-ink/40 dark:text-jt-steel/70">
+                From
+              </span>
+              <span className="font-tech text-base font-bold text-jt-blue dark:text-jt-mint">
+                {formatPrice(getDisplayPrice(product))}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-tech text-base font-bold text-jt-blue dark:text-jt-mint">
+                {formatPrice(product.price)}
+              </span>
+              {!!product.originalPrice && product.originalPrice > product.price && (
+                <span className="font-tech text-[11px] text-jt-ink/40 line-through dark:text-jt-steel/70">
+                  {formatPrice(product.originalPrice)}
+                </span>
+              )}
+            </>
           )}
         </p>
 

@@ -3,7 +3,8 @@ import { Plus, Search, Edit, Trash2, Flame, Zap, Ban, CheckCircle2, MapPin } fro
 import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
-import { ProductUploadForm, FormState, emptyForm } from './ProductUploadForm';
+import { ProductUploadForm, FormState, emptyForm, VariantFormRow } from './ProductUploadForm';
+import { getDisplayPrice, hasVariants } from '../../data';
 
 export interface AdminProduct {
   id: string;
@@ -111,6 +112,14 @@ export const ProductsManager = () => {
       colors: product.colors || [],
       inStock: product.inStock !== false,
       location: product.location || '',
+      variants: (product.variants || []).map(
+        (v): VariantFormRow => ({
+          label: v.label,
+          price: String(v.price),
+          originalPrice: v.originalPrice ? String(v.originalPrice) : '',
+          inStock: v.inStock !== false,
+        }),
+      ),
     });
     setIsModalOpen(true);
   };
@@ -235,7 +244,8 @@ export const ProductsManager = () => {
                       </p>
                     )}
                     <p className="mt-1 text-sm font-bold text-gray-900 dark:text-gray-100">
-                      {formatPrice(product.price)}
+                      {hasVariants(product) && <span className="mr-1 text-[10px] font-semibold uppercase text-gray-400">From</span>}
+                      {formatPrice(getDisplayPrice(product))}
                     </p>
                   </div>
                 </div>
@@ -348,7 +358,8 @@ export const ProductsManager = () => {
                       )}
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900 dark:text-gray-100">
-                      {formatPrice(product.price)}
+                      {hasVariants(product) && <span className="mr-1 text-[10px] font-semibold uppercase text-gray-400">From</span>}
+                      {formatPrice(getDisplayPrice(product))}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-1.5 flex-wrap max-w-[180px]">

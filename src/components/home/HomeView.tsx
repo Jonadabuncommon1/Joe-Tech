@@ -17,7 +17,7 @@ import {
   Flame,
 } from 'lucide-react';
 import { useAppContext } from '../../store/AppContext';
-import { marketplaceCategories, formatPrice } from '../../data';
+import { marketplaceCategories, formatPrice, getDisplayPrice } from '../../data';
 import { GadgetIcon, ProductImage } from '../ui/ProductImage';
 import { HeroVisual } from './HeroVisual';
 import { branches, contacts, site, waLink } from '../../config/site';
@@ -452,7 +452,7 @@ const FlipDealCard = memo<{
               {product.name}
             </p>
             <p className="mt-0.5 font-tech text-xs font-bold text-jt-blue dark:text-jt-mint">
-              {formatPrice(product.price)}
+              {formatPrice(getDisplayPrice(product))}
             </p>
           </div>
         </motion.button>

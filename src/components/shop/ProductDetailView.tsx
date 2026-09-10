@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
 import { site } from '../../config/site';
+import { ProductVariant } from '../../types';
 import { Ban, Heart, ChevronRight, MessageCircle, Share2, Star, ShoppingBag, ShieldCheck, Truck, Minus, Plus, ArrowLeft } from 'lucide-react';
 
 export const ProductDetailView = () => {
@@ -13,6 +14,7 @@ export const ProductDetailView = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [quantity, setQuantity] = useState(1);
 
   // Reset selections when product changes
@@ -20,6 +22,7 @@ export const ProductDetailView = () => {
     if (product) {
       setSelectedSize(product.sizes?.[0] || '');
       setSelectedColor(product.colors?.[0] || '');
+      setSelectedVariant(product.variants?.[0] ?? null);
       setSelectedImage(0);
       setQuantity(1);
     }
@@ -42,7 +45,12 @@ export const ProductDetailView = () => {
   const isWishlisted = wishlist.includes(product.id);
   // Rows created before the stock toggle existed have no `inStock` value,
   // so only an explicit `false` reads as unavailable.
-  const outOfStock = product.inStock === false;
+  const productOutOfStock = product.inStock === false;
+  // A variant can be individually marked out of stock even while the rest
+  // of the listing is available (e.g. the 256GB sold out, 128GB hasn't).
+  const outOfStock = productOutOfStock || selectedVariant?.inStock === false;
+  const activePrice = selectedVariant?.price ?? product.price;
+  const activeOriginalPrice = selectedVariant ? selectedVariant.originalPrice : product.originalPrice;
 
   const handleAddToCart = () => {
     if (outOfStock) return;
@@ -51,6 +59,7 @@ export const ProductDetailView = () => {
       quantity,
       selectedSize,
       selectedColor,
+      selectedVariant: selectedVariant ?? undefined,
     });
   };
 
@@ -64,10 +73,11 @@ export const ProductDetailView = () => {
     message += "===========================================\n";
     message += "Hello! I would like to inquire about this item:\n\n";
     message += `🛍️ *Product*: *${product.name}*\n`;
+    if (selectedVariant) message += `💾 *Option*: ${selectedVariant.label}\n`;
     if (selectedSize) message += `📏 *Size*: ${selectedSize}\n`;
     if (selectedColor) message += `🎨 *Color*: ${selectedColor}\n`;
     message += `🔢 *Quantity*: ${quantity}\n`;
-    message += `💰 *Total Price*: *${formatPrice(product.price * quantity)}*\n\n`;
+    message += `💰 *Total Price*: *${formatPrice(activePrice * quantity)}*\n\n`;
     message += outOfStock
       ? "This item shows as out of stock, please let me know when it is back. Thank you!"
       : "Please let me know if this item is currently available. Thank you!";
@@ -181,10 +191,10 @@ export const ProductDetailView = () => {
             
             <div className="flex items-center space-x-4 mb-8">
               <div className="flex items-baseline gap-2.5">
-                <p className="text-3xl font-bold text-[#000000]">{formatPrice(product.price)}</p>
-                {!!product.originalPrice && product.originalPrice > product.price && (
+                <p className="text-3xl font-bold text-[#000000]">{formatPrice(activePrice)}</p>
+                {!!activeOriginalPrice && activeOriginalPrice > activePrice && (
                   <p className="text-lg font-medium text-gray-400 line-through dark:text-gray-600">
-                    {formatPrice(product.originalPrice)}
+                    {formatPrice(activeOriginalPrice)}
                   </p>
                 )}
               </div>
@@ -229,6 +239,44 @@ export const ProductDetailView = () => {
             </div>
 
             <div className="space-y-8 mb-10">
+              {/* Variants (e.g. storage size), each with its own price, picking one swaps the price above the way Jumia/Temu do. */}
+              {product.variants && product.variants.length > 0 && (
+                <div>
+                  <h3 className="text-xs uppercase tracking-widest font-bold text-gray-900 dark:text-gray-800 dark:text-white mb-4">
+                    Option: <span className="text-gray-400 dark:text-gray-800 dark:text-white">{selectedVariant?.label}</span>
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {product.variants.map((variant) => {
+                      const variantSoldOut = variant.inStock === false;
+                      const isActive = selectedVariant?.label === variant.label;
+                      return (
+                        <button
+                          key={variant.label}
+                          type="button"
+                          disabled={variantSoldOut}
+                          onClick={() => setSelectedVariant(variant)}
+                          className={`flex flex-col items-start rounded-lg border px-3.5 py-2 text-left transition-all duration-300 ${
+                            variantSoldOut
+                              ? 'cursor-not-allowed border-gray-100 text-gray-300 dark:border-white/5 dark:text-white/20'
+                              : isActive
+                                ? 'border-[#3626a7] bg-[#3626a7]/10 text-gray-900 shadow-[0_0_15px_rgba(16,145,33,0.2)] dark:text-white'
+                                : 'border-gray-200 text-gray-500 hover:border-[#3626a7]/50 hover:brand-text dark:text-gray-300'
+                          }`}
+                        >
+                          <span className="text-sm font-semibold">
+                            {variant.label}
+                            {variantSoldOut && ' (Sold out)'}
+                          </span>
+                          <span className="font-tech text-xs font-bold text-jt-blue dark:text-jt-mint">
+                            {formatPrice(variant.price)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Colors */}
               {product.colors && product.colors.length > 0 && (() => {
                 const getColorCode = (colorName: string) => {

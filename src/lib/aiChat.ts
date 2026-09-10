@@ -1,19 +1,33 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Product } from '../types';
-import { formatPrice } from '../data';
+import { formatPrice, getDisplayPrice, getMaxVariantPrice, hasVariants } from '../data';
 import { branches, contacts, site } from '../config/site';
 
 const branchLines = branches
   .map((b) => `${b.name}: ${b.street}, ${b.city}, ${b.state} (${b.hours})`)
   .join('. ');
 
+/** A flat price for a plain listing, or a "from X to Y" range plus the
+ *  option labels for a product with priced variants (e.g. storage sizes),
+ *  so Cisco never quotes a single number for something that actually has
+ *  several, or lists an option that's individually sold out as available. */
+function priceLine(p: Product): string {
+  if (!hasVariants(p)) return formatPrice(p.price);
+  const low = getDisplayPrice(p);
+  const high = getMaxVariantPrice(p);
+  const options = p.variants!
+    .map((v) => `${v.label} ${formatPrice(v.price)}${v.inStock === false ? ' [SOLD OUT]' : ''}`)
+    .join(', ');
+  return low === high ? formatPrice(low) : `from ${formatPrice(low)} to ${formatPrice(high)} (${options})`;
+}
+
 function buildSystemPrompt(products: Product[]): string {
   // This list is rebuilt from the live product state on every message, so it
   // always reflects whatever the admin dashboard currently has: new stock,
   // price changes, and in/out-of-stock status all show up here automatically.
   const productList = products.slice(0, 40).map(p =>
-    `- ${p.name} (${p.category}): ${formatPrice(p.price)}${p.description ? ' - ' + p.description : ''}${p.isNew ? ' [NEW]' : ''}${p.isTrending ? ' [TRENDING]' : ''}${p.inStock === false ? ' [OUT OF STOCK]' : ' [In stock]'}`
+    `- ${p.name} (${p.category}): ${priceLine(p)}${p.description ? ' - ' + p.description : ''}${p.isNew ? ' [NEW]' : ''}${p.isTrending ? ' [TRENDING]' : ''}${p.inStock === false ? ' [OUT OF STOCK]' : ' [In stock]'}`
   ).join('\n');
 
   return `You are "Cisco", the shopping assistant for Joe Tech - a gadget retailer selling iPhones and iPads, Android phones, laptops and tablets, phone and laptop accessories, gaming monitors/chairs/tables, and solar power systems, with a repair and maintenance service.
@@ -114,7 +128,7 @@ function getCategoryProducts(products: Product[], categoryNames: string[], limit
   );
   if (matches.length === 0) return '';
   return matches.slice(0, limit).map(p =>
-    `- **${p.name}** - ${formatPrice(p.price)}${p.description ? ` _(${p.description.slice(0, 70)}...)_` : ''}`
+    `- **${p.name}** - ${priceLine(p)}${p.description ? ` _(${p.description.slice(0, 70)}...)_` : ''}`
   ).join('\n');
 }
 
@@ -125,16 +139,22 @@ function findPredefinedAnswer(message: string, products: Product[]): string | nu
   const priceQuery = parsePriceQuery(normalized);
   if (priceQuery) {
     const { limit, type } = priceQuery;
-    let filtered = products.filter(p => type === 'under' ? p.price <= limit : p.price >= limit);
+    // A variant product (e.g. a phone with 64/128/256GB options) qualifies
+    // for "under X" if ANY option is cheap enough, and for "over X" if any
+    // option is dear enough, not by its flat base price, which could be a
+    // completely different number from what a customer would actually pay.
+    let filtered = products.filter(p =>
+      type === 'under' ? getDisplayPrice(p) <= limit : getMaxVariantPrice(p) >= limit,
+    );
     if (type === 'under') {
-      filtered.sort((a, b) => b.price - a.price);
+      filtered.sort((a, b) => getDisplayPrice(b) - getDisplayPrice(a));
     } else {
-      filtered.sort((a, b) => a.price - b.price);
+      filtered.sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b));
     }
     if (filtered.length > 0) {
       let reply = `Here are our best options **${type === 'under' ? 'under or up to' : 'starting from'} ${formatPrice(limit)}**:\n\n`;
       filtered.slice(0, 8).forEach(p => {
-        reply += `- **${p.name}** (${p.category}) - **${formatPrice(p.price)}**\n`;
+        reply += `- **${p.name}** (${p.category}) - **${priceLine(p)}**\n`;
         if (p.description) reply += `  _${p.description.slice(0, 80)}..._\n`;
       });
       reply += `\nWould you like help adding any of these to your cart?`;
@@ -195,7 +215,7 @@ function findPredefinedAnswer(message: string, products: Product[]): string | nu
     if (recentlyUploaded.length > 0) {
       let reply = `Here's what we've added most recently:\n\n`;
       recentlyUploaded.forEach((p) => {
-        reply += `- **${p.name}** (${p.category}) - **${formatPrice(p.price)}**${p.inStock === false ? ' _(currently out of stock)_' : ''}\n`;
+        reply += `- **${p.name}** (${p.category}) - **${priceLine(p)}**${p.inStock === false ? ' _(currently out of stock)_' : ''}\n`;
       });
       reply += `\nWant more detail on any of these, or is there something specific you're after?`;
       return reply;
@@ -207,15 +227,15 @@ function findPredefinedAnswer(message: string, products: Product[]): string | nu
   // Lowest / highest price
   if (containsAny('lowest price', 'cheapest', 'minimum price', 'least expensive', 'lowest')) {
     if (products.length > 0) {
-      const p = [...products].sort((a, b) => a.price - b.price)[0];
-      return `Our most affordable item right now is the **${p.name}** at **${formatPrice(p.price)}** in the ${p.category} category!`;
+      const p = [...products].sort((a, b) => getDisplayPrice(a) - getDisplayPrice(b))[0];
+      return `Our most affordable item right now is the **${p.name}** at **${priceLine(p)}** in the ${p.category} category!`;
     }
   }
 
   if (containsAny('highest price', 'most expensive', 'maximum price', 'priciest', 'highest')) {
     if (products.length > 0) {
-      const p = [...products].sort((a, b) => b.price - a.price)[0];
-      return `Our top-of-the-line item right now is the **${p.name}** at **${formatPrice(p.price)}** in the ${p.category} category!`;
+      const p = [...products].sort((a, b) => getMaxVariantPrice(b) - getMaxVariantPrice(a))[0];
+      return `Our top-of-the-line item right now is the **${p.name}** at **${priceLine(p)}** in the ${p.category} category!`;
     }
   }
 
@@ -262,7 +282,7 @@ Which of these would work best for you?`;
       let reply = `Here's what customers are asking for most right now:\n\n`;
       trending.forEach(p => {
         const badge = p.isNew ? ' (new arrival)' : p.isTrending ? ' (trending)' : '';
-        reply += `- **${p.name}** (${p.category}) - **${formatPrice(p.price)}**${badge}\n`;
+        reply += `- **${p.name}** (${p.category}) - **${priceLine(p)}**${badge}\n`;
       });
       reply += `\nWould you like more detail on any of these?`;
       return reply;
@@ -272,7 +292,7 @@ Which of these would work best for you?`;
     if (sample.length > 0) {
       let reply = `Here are some of our featured items right now:\n\n`;
       sample.forEach(p => {
-        reply += `- **${p.name}** (${p.category}) - **${formatPrice(p.price)}**\n`;
+        reply += `- **${p.name}** (${p.category}) - **${priceLine(p)}**\n`;
       });
       reply += `\nYou can see the full collection on the homepage.`;
       return reply;

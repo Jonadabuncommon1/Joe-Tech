@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Trash2, Plus, Minus, ShoppingBag, MessageCircle, CreditCard } from 'lucide-react';
 import { useAppContext } from '../store/AppContext';
-import { formatPrice } from '../data';
+import { formatPrice, getCartItemPrice } from '../data';
 import { waLink } from '../config/site';
 import { ProductImage } from './ui/ProductImage';
 import toast from 'react-hot-toast';
@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 export const WhatsAppCart = () => {
   const { cart, removeFromCart, updateQuantity, cartOpen, setCartOpen, user, setCurrentView } = useAppContext();
 
-  const totalAmount = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const totalAmount = cart.reduce((acc, item) => acc + getCartItemPrice(item) * item.quantity, 0);
 
   const generateWhatsAppMessage = () => {
     let message = "🌟 *Joe Tech* 🌟\n";
@@ -19,9 +19,10 @@ export const WhatsAppCart = () => {
 
     cart.forEach((item, idx) => {
       message += `${idx + 1}. 🛍️ *${item.product.name}* (Qty: ${item.quantity})\n`;
+      if (item.selectedVariant) message += `   💾 Option: ${item.selectedVariant.label}\n`;
       if (item.selectedSize) message += `   📏 Size: ${item.selectedSize}\n`;
       if (item.selectedColor) message += `   🎨 Color: ${item.selectedColor}\n`;
-      message += `   💰 Price: ${formatPrice(item.product.price * item.quantity)}\n\n`;
+      message += `   💰 Price: ${formatPrice(getCartItemPrice(item) * item.quantity)}\n\n`;
     });
 
     message += "-------------------------------------------\n";
@@ -90,7 +91,7 @@ export const WhatsAppCart = () => {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
+                      key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}-${item.selectedVariant?.label}`}
                       className="flex gap-4 rounded-2xl border border-jt-ink/8 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-jt-ink-soft/40"
                     >
                       <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl">
@@ -108,9 +109,9 @@ export const WhatsAppCart = () => {
                             <h3 className="line-clamp-1 text-sm font-semibold text-jt-ink dark:text-white">
                               {item.product.name}
                             </h3>
-                            {(item.selectedColor || item.selectedSize) && (
+                            {(item.selectedVariant || item.selectedColor || item.selectedSize) && (
                               <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-jt-ink/50 dark:text-jt-steel">
-                                {[item.selectedColor, item.selectedSize].filter(Boolean).join(' / ')}
+                                {[item.selectedVariant?.label, item.selectedColor, item.selectedSize].filter(Boolean).join(' / ')}
                               </p>
                             )}
                           </div>
@@ -143,7 +144,7 @@ export const WhatsAppCart = () => {
                             </button>
                           </div>
                           <span className="font-tech text-sm font-bold tracking-wide text-jt-blue dark:text-jt-mint">
-                            {formatPrice(item.product.price * item.quantity)}
+                            {formatPrice(getCartItemPrice(item) * item.quantity)}
                           </span>
                         </div>
                       </div>

@@ -1,3 +1,19 @@
+/**
+ * One buyable option of a product that carries its own price, e.g. a
+ * storage size ("64GB", "128GB", "256GB") for a phone that would otherwise
+ * need a separate listing per capacity. Selecting one on the product page
+ * swaps in its price the way Jumia/Temu do for phones and tablets.
+ */
+export interface ProductVariant {
+  /** Whatever the admin types, e.g. "64GB", "128GB", "1TB". */
+  label: string;
+  price: number;
+  /** Strikethrough price for this specific variant, if it's discounted. */
+  originalPrice?: number;
+  /** Same convention as Product.inStock: unset/true means available. */
+  inStock?: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -6,6 +22,9 @@ export interface Product {
   category: string;
   colors?: string[];
   sizes?: string[];
+  /** Storage/size/etc. options, each with its own price. When present, the
+   *  product page shows a picker instead of the flat `price` above. */
+  variants?: ProductVariant[];
   images: string[];
   isNew?: boolean;
   isTrending?: boolean;
@@ -54,6 +73,9 @@ export interface CartItem {
   quantity: number;
   selectedSize?: string;
   selectedColor?: string;
+  /** Which variant (e.g. storage size) was chosen; its price overrides
+   *  product.price wherever cart totals are computed. */
+  selectedVariant?: ProductVariant;
 }
 
 export type ViewState =

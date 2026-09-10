@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { X, UploadCloud, Loader2, Flame, Zap, Tag, Ban, CheckCircle2, Link2, Clipboard, MapPin } from 'lucide-react';
+import { X, UploadCloud, Loader2, Flame, Zap, Tag, Ban, CheckCircle2, Link2, Clipboard, MapPin, Plus, Layers } from 'lucide-react';
 import { marketplaceCategories } from '../../data';
 import { uploadImage } from '../../lib/supabase';
 import { useAppContext } from '../../store/AppContext';
+
+/** One row of the Variants editor below, numbers kept as strings like every
+ *  other controlled numeric input in this form, parsed on submit. */
+export type VariantFormRow = {
+  label: string;
+  price: string;
+  originalPrice: string;
+  inStock: boolean;
+};
+
+export const emptyVariantRow = (): VariantFormRow => ({
+  label: '',
+  price: '',
+  originalPrice: '',
+  inStock: true,
+});
 
 export type FormState = {
   name: string;
@@ -21,6 +37,10 @@ export type FormState = {
   /** Which branch has this item: 'Nsukka' or 'Lagos', or '' for older rows
    *  uploaded before this field existed. */
   location: string;
+  /** Storage/size options, each with its own price, e.g. an iPhone 11
+   *  listed once with 64GB/128GB/256GB rows instead of three separate
+   *  products. Empty means this listing just uses the flat price above. */
+  variants: VariantFormRow[];
 };
 
 export const PRODUCT_LOCATIONS = ['Nsukka', 'Lagos'] as const;
@@ -56,6 +76,7 @@ export const emptyForm = (): FormState => ({
   colors: [],
   inStock: true,
   location: '',
+  variants: [],
 });
 
 interface ProductUploadFormProps {
@@ -146,6 +167,18 @@ export const ProductUploadForm: React.FC<ProductUploadFormProps> = ({
       setFormError('At least one image is required.');
       return;
     }
+    // Rows the admin started (typed a label) but didn't finish (no price)
+    // are a mistake worth stopping for, rather than silently dropping a
+    // "256GB" option nobody ever gets to buy. A row never touched at all
+    // (both fields still blank) is just an unused blank row, and is
+    // filtered out further down instead of blocking the whole form.
+    const halfFilledVariant = form.variants.find(
+      (v) => v.label.trim() && (!v.price.trim() || !Number.isFinite(Number(v.price)) || Number(v.price) <= 0),
+    );
+    if (halfFilledVariant) {
+      setFormError(`Enter a valid price for the "${halfFilledVariant.label.trim()}" option, or remove that row.`);
+      return;
+    }
 
     setIsUploading(true);
     setFormError('');
@@ -163,6 +196,15 @@ export const ProductUploadForm: React.FC<ProductUploadFormProps> = ({
           throw new Error(`Upload failed: ${err.message || 'Unknown error'}`);
         }
       }
+
+      const builtVariants = form.variants
+        .filter((v) => v.label.trim() && Number(v.price) > 0)
+        .map((v) => ({
+          label: v.label.trim(),
+          price: Number(v.price),
+          ...(v.originalPrice ? { originalPrice: Number(v.originalPrice) } : {}),
+          inStock: v.inStock,
+        }));
 
       // `null`, not `undefined`, for anything the admin can clear. Supabase
       // sends this object as JSON, and JSON.stringify drops `undefined` keys
@@ -186,6 +228,7 @@ export const ProductUploadForm: React.FC<ProductUploadFormProps> = ({
         colors: form.colors.length > 0 ? form.colors : null,
         inStock: form.inStock,
         location: form.location || null,
+        variants: builtVariants.length > 0 ? builtVariants : null,
       };
 
       if (editingId) {
@@ -389,6 +432,97 @@ export const ProductUploadForm: React.FC<ProductUploadFormProps> = ({
                   className="w-full px-4 py-3 bg-gray-50 dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-xl focus:outline-none focus:border-[#3626a7] text-sm shadow-sm"
                 />
               </div>
+            </div>
+
+            {/* Variants: storage sizes (or any other option) each priced separately, so
+                one listing covers what would otherwise be several near-duplicate products. */}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                  <Layers size={13} /> Storage / Options (optional)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, variants: [...form.variants, emptyVariantRow()] })}
+                  className="flex items-center gap-1 text-xs font-bold text-[#3626a7] hover:text-[#281c7d] dark:text-[#8b7ae8]"
+                >
+                  <Plus size={13} /> Add option
+                </button>
+              </div>
+              <p className="mb-3 text-[11px] text-gray-500 dark:text-gray-400">
+                For a phone that comes in more than one storage size at different prices, e.g. 64GB, 128GB,
+                256GB. Add one row per option and the customer picks one on the product page, the price
+                changes to match, no need to upload it three times. Leave this empty for a normal
+                single-price listing, in which case the Selling Price above is what customers see.
+              </p>
+
+              {form.variants.length > 0 && (
+                <div className="space-y-3">
+                  {form.variants.map((variant, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-white/10 dark:bg-[#15171e]"
+                    >
+                      <div className="grid grid-cols-1 gap-2 min-[420px]:grid-cols-[1fr_1fr_1fr_auto]">
+                        <input
+                          type="text"
+                          placeholder="e.g. 128GB"
+                          value={variant.label}
+                          onChange={(e) => {
+                            const next = [...form.variants];
+                            next[idx] = { ...next[idx], label: e.target.value };
+                            setForm({ ...form, variants: next });
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-lg text-xs focus:outline-none focus:border-[#3626a7]"
+                        />
+                        <input
+                          type="number"
+                          min={1}
+                          placeholder="Price (₦)"
+                          value={variant.price}
+                          onChange={(e) => {
+                            const next = [...form.variants];
+                            next[idx] = { ...next[idx], price: e.target.value };
+                            setForm({ ...form, variants: next });
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-lg text-xs focus:outline-none focus:border-[#3626a7]"
+                        />
+                        <input
+                          type="number"
+                          placeholder="Strikethrough (₦)"
+                          value={variant.originalPrice}
+                          onChange={(e) => {
+                            const next = [...form.variants];
+                            next[idx] = { ...next[idx], originalPrice: e.target.value };
+                            setForm({ ...form, variants: next });
+                          }}
+                          className="w-full px-3 py-2 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white rounded-lg text-xs focus:outline-none focus:border-[#3626a7]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, variants: form.variants.filter((_, i) => i !== idx) })}
+                          className="flex items-center justify-center gap-1 rounded-lg border border-red-200 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20"
+                        >
+                          <X size={13} /> Remove
+                        </button>
+                      </div>
+                      <label className="mt-2 flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={variant.inStock}
+                          onChange={(e) => {
+                            const next = [...form.variants];
+                            next[idx] = { ...next[idx], inStock: e.target.checked };
+                            setForm({ ...form, variants: next });
+                          }}
+                          className="h-3.5 w-3.5 rounded border-gray-300 text-[#3626a7] focus:ring-[#3626a7]"
+                        />
+                        This option is in stock
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Placements & Showcase Controls */}

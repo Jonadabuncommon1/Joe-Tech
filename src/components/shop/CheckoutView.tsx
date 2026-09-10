@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
-import { formatPrice } from '../../data';
+import { formatPrice, getCartItemPrice } from '../../data';
 import { ProductImage } from '../ui/ProductImage';
 import { bankDetails, bankDetailsConfigured, branches, site, mailLink, waLink } from '../../config/site';
 
@@ -91,7 +91,7 @@ export const CheckoutView: React.FC = () => {
     [],
   );
 
-  const subtotal = cart.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + getCartItemPrice(i) * i.quantity, 0);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -120,7 +120,8 @@ export const CheckoutView: React.FC = () => {
       `ORDER ${orderRef}, Joe Tech`,
       '',
       ...cart.map(
-        (i) => `• ${i.product.name} x${i.quantity}, ${formatPrice(i.product.price * i.quantity)}`,
+        (i) =>
+          `• ${i.product.name}${i.selectedVariant ? ` (${i.selectedVariant.label})` : ''} x${i.quantity}, ${formatPrice(getCartItemPrice(i) * i.quantity)}`,
       ),
       '',
       `TOTAL: ${formatPrice(subtotal)}`,
@@ -411,7 +412,7 @@ export const CheckoutView: React.FC = () => {
 
               <ul className="mt-5 space-y-4">
                 {cart.map((item) => (
-                  <li key={item.product.id} className="flex gap-3">
+                  <li key={`${item.product.id}-${item.selectedVariant?.label}`} className="flex gap-3">
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl">
                       <ProductImage
                         src={item.product.images?.[0]}
@@ -426,11 +427,11 @@ export const CheckoutView: React.FC = () => {
                         {item.product.name}
                       </p>
                       <p className="mt-0.5 text-xs text-jt-ink/55 dark:text-jt-steel">
-                        Qty {item.quantity}
+                        {item.selectedVariant ? `${item.selectedVariant.label} · ` : ''}Qty {item.quantity}
                       </p>
                     </div>
                     <p className="shrink-0 font-tech text-sm font-bold text-jt-ink dark:text-white">
-                      {formatPrice(item.product.price * item.quantity)}
+                      {formatPrice(getCartItemPrice(item) * item.quantity)}
                     </p>
                   </li>
                 ))}

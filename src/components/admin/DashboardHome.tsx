@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { ShoppingBag, Package, TrendingUp, Layers, Bell, BellOff, Users } from 'lucide-react';
 import { useAppContext } from '../../store/AppContext';
-import { formatPrice } from '../../data';
+import { formatPrice, getDisplayPrice, hasVariants } from '../../data';
 import { AdminView } from './AdminLayout';
 import { subscribeToVisitors, requestNotificationPermission, VisitorLog } from '../../lib/visitorTracking';
 import toast from 'react-hot-toast';
@@ -213,7 +213,10 @@ export const DashboardHome = ({ onChangeView }: { onChangeView: (view: AdminView
                     <td className="hidden py-3 pr-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap lg:table-cell">
                       {p.created_at ? new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Legacy Upload'}
                     </td>
-                    <td className="py-3 pr-4 font-bold text-[#000000] dark:text-gray-800 dark:text-white">{formatPrice(p.price)}</td>
+                    <td className="py-3 pr-4 font-bold text-[#000000] dark:text-gray-800 dark:text-white">
+                      {hasVariants(p) && <span className="mr-1 text-[10px] font-semibold uppercase text-gray-400">From</span>}
+                      {formatPrice(getDisplayPrice(p))}
+                    </td>
                     <td className="py-3">
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded border ${

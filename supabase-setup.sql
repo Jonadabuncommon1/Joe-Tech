@@ -28,20 +28,27 @@ create table if not exists public.products (
   condition      text,
   "isService"    boolean default false,
   "inStock"      boolean default true,
+  variants       jsonb,
   created_at     timestamptz not null default now()
 );
 
 -- Idempotent migration for a table that already exists (safe to run any
 -- number of times): adds the columns the admin upload form now sends
--- (Original price / Hot Deals / Featured / Custom promo badge) that an
--- older run of this file wouldn't have created yet. This is what fixes
--- "Could not find the '<column>' column of 'products' in the schema
+-- (Original price / Hot Deals / Featured / Custom promo badge / Variants)
+-- that an older run of this file wouldn't have created yet. This is what
+-- fixes "Could not find the '<column>' column of 'products' in the schema
 -- cache" errors when publishing a product from the admin panel.
 alter table public.products
   add column if not exists "originalPrice" numeric,
   add column if not exists "isHot" boolean default false,
   add column if not exists "isFeatured" boolean default false,
-  add column if not exists badge text;
+  add column if not exists badge text,
+  -- Storage/size options with their own price (e.g. 64GB/128GB/256GB),
+  -- added 2026-09-10 so one listing can cover a phone that comes in
+  -- several capacities instead of needing a separate product per size.
+  -- Shape: [{ "label": "128GB", "price": 650000, "originalPrice": 700000,
+  -- "inStock": true }, ...]. Null/absent means a plain single-price item.
+  add column if not exists variants jsonb;
 
 alter table public.products enable row level security;
 
