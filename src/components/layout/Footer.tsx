@@ -176,7 +176,7 @@ export const Footer = () => {
             that column instead of sitting directly under it, however far
             the page is scrolled. */}
         <div className="flex flex-col items-center justify-between gap-3 border-t border-jt-ink/8 pt-5 pr-16 text-xs font-medium text-jt-ink/60 dark:border-white/10 dark:text-jt-steel sm:pr-20 md:flex-row">
-          <p>&copy; {new Date().getFullYear()} Joe Tech. All rights reserved. · {site.email}</p>
+          <p>&copy; {new Date().getFullYear()} Joe Tech. All rights reserved.</p>
           <div className="flex space-x-6">
             <button
               onClick={() => { setCurrentView('privacy'); window.scrollTo(0, 0); }}
