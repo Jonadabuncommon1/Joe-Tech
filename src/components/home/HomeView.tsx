@@ -4,10 +4,7 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  MapPin,
   MessageCircle,
-  Phone,
   Quote,
   RefreshCw,
   Search,
@@ -20,7 +17,7 @@ import { useAppContext } from '../../store/AppContext';
 import { marketplaceCategories, formatPrice, getDisplayPrice } from '../../data';
 import { GadgetIcon, ProductImage } from '../ui/ProductImage';
 import { HeroVisual } from './HeroVisual';
-import { branches, contacts, site, waLink } from '../../config/site';
+import { site, waLink } from '../../config/site';
 import { Product } from '../../types';
 
 /**
@@ -1045,89 +1042,6 @@ export const HomeView: React.FC = () => {
             </div>
           </div>
         </motion.div>
-      </Section>
-
-      {/* ── Branches ── */}
-      <Section className="bg-white py-8 dark:bg-jt-ink-soft/30 sm:py-14">
-        <div className="mx-auto w-full max-w-7xl px-3.5 sm:px-6">
-          <SectionHeading
-            center
-            eyebrow="Visit us"
-            title={
-              <>
-                Two branches, <span className="text-shine">real people</span>
-              </>
-            }
-            subtitle="Come and test the device before you pay. Or call ahead and we will have it ready."
-          />
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {branches.map((branch) => (
-              <motion.div
-                key={branch.id}
-                variants={fadeUp}
-                className="rounded-2xl border border-jt-ink/8 bg-jt-paper p-5 transition-all dark:border-white/10 dark:bg-jt-ink/50"
-              >
-                <div className="flex items-start gap-3.5">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-jt-blue text-white shadow-md">
-                    <MapPin className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-display text-base font-bold text-jt-ink dark:text-white">
-                      {branch.name}
-                    </h3>
-                    <p className="mt-0.5 text-xs text-jt-ink/65 dark:text-jt-steel">
-                      {branch.street}, {branch.city}, {branch.state}
-                    </p>
-                    <p className="mt-2 flex items-center gap-1.5 text-xs text-jt-ink/55 dark:text-jt-steel">
-                      <Clock className="h-3.5 w-3.5 shrink-0" />
-                      {branch.hours}
-                    </p>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <a
-                        href={`tel:${branch.phone}`}
-                        className="focus-ring inline-flex items-center gap-1.5 rounded-full bg-jt-blue px-3.5 py-1.5 text-[11px] font-semibold text-white hover:bg-jt-blue-soft"
-                      >
-                        <Phone className="h-3 w-3" />
-                        {branch.phone}
-                      </a>
-                      <a
-                        href={waLink(
-                          `Hello Joe Tech, I would like to ask about the ${branch.city} branch.`,
-                          branch.phone,
-                        )}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-jt-ink/12 px-3.5 py-1.5 text-[11px] font-semibold text-jt-ink hover:bg-jt-lime/10 dark:border-white/15 dark:text-white"
-                      >
-                        <MessageCircle className="h-3 w-3" />
-                        WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.p
-            variants={fadeUp}
-            className="mt-6 text-center text-xs text-jt-ink/55 dark:text-jt-steel"
-          >
-            Prefer email?{' '}
-            <a
-              href={`mailto:${site.email}`}
-              className="font-bold text-jt-blue hover:underline dark:text-jt-mint"
-            >
-              {site.email}
-            </a>{' '}
-            · Call{' '}
-            <a href={`tel:${contacts.primary}`} className="font-bold hover:underline">
-              {contacts.primary}
-            </a>
-          </motion.p>
-        </div>
       </Section>
 
       {/* ── Testimonials ── */}

@@ -121,10 +121,6 @@ export const Navbar = () => {
               { label: 'Product Categories', view: 'categories' as const },
               { label: 'Repairs', view: 'services' as const },
               { label: 'About', view: 'about' as const },
-              {
-                label: `Wishlist${wishlist.length > 0 ? ` (${wishlist.length})` : ''}`,
-                view: 'wishlist' as const,
-              },
               { label: 'Support', view: 'contact' as const },
             ].map(({ label, view }) => (
               <button
@@ -159,8 +155,34 @@ export const Navbar = () => {
             </form>
           </div>
 
-          {/* Right: Cart, User Profile & Mobile Drawer */}
+          {/* Right: Wishlist, Cart, User Profile & Mobile Drawer */}
           <div className="flex items-center space-x-3 sm:space-x-5">
+            {/* Wishlist Button — replaces the old "Wishlist" nav link. Lives
+                next to the cart, with the same little count badge so there's
+                a clear sign when something is saved. */}
+            <button
+              type="button"
+              onClick={() => handleNavClick('wishlist')}
+              className="relative group flex items-center justify-center hover:scale-[1.05] transition-transform duration-200 p-1"
+              title="Your Wishlist"
+              aria-label={`Your wishlist${wishlist.length > 0 ? `, ${wishlist.length} saved` : ''}`}
+            >
+              <Heart
+                size={20}
+                strokeWidth={2.25}
+                className={`transition-colors ${
+                  wishlist.length > 0
+                    ? 'fill-[#E5484D] text-[#E5484D]'
+                    : 'text-gray-700 dark:text-gray-300 group-hover:text-jt-blue dark:group-hover:text-jt-mint'
+                }`}
+              />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[#E5484D] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                  {wishlist.length}
+                </span>
+              )}
+            </button>
+
             {/* Cart Button */}
             <button
               type="button"
@@ -248,15 +270,6 @@ export const Navbar = () => {
                       >
                         <Wrench size={14} />
                         <span>Repairs &amp; Maintenance</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleNavClick('wishlist')}
-                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-jt-ink/80 transition-colors hover:bg-jt-blue/10 hover:text-jt-blue dark:text-jt-steel dark:hover:bg-white/5 dark:hover:text-white"
-                      >
-                        <Heart size={14} />
-                        <span>Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}</span>
                       </button>
                     </div>
 
@@ -378,14 +391,6 @@ export const Navbar = () => {
                   className="text-left text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:text-jt-blue dark:hover:text-jt-mint transition-colors py-1.5 w-full"
                 >
                   Your Cart {cartItemsCount > 0 ? `(${cartItemsCount})` : ''}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleNavClick('wishlist')}
-                  className="text-left text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:text-jt-blue dark:hover:text-jt-mint transition-colors py-1.5 w-full"
-                >
-                  Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}
                 </button>
 
                 <button

@@ -6,6 +6,7 @@ import { CategoriesManager } from './CategoriesManager';
 import { MediaManager } from './MediaManager';
 import { Settings } from './Settings';
 import { Menu, X } from 'lucide-react';
+import { LogoLockup } from '../brand/Logo';
 
 export type AdminView = 'dashboard' | 'products' | 'categories' | 'media' | 'settings';
 
@@ -102,7 +103,10 @@ export const AdminLayout = () => {
           >
             <Menu size={22} />
           </button>
-          <span className="font-serif text-base font-bold">Admin Panel</span>
+          <LogoLockup className="h-6" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">
+            Admin
+          </span>
         </div>
 
         <div className="p-4 md:p-10 max-w-7xl mx-auto min-h-screen relative">

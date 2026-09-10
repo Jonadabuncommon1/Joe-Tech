@@ -3,6 +3,7 @@ import { LayoutDashboard, ShoppingBag, FolderTree, Image as ImageIcon, Settings 
 import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
 import { AdminView } from './AdminLayout';
+import { LogoLockup } from '../brand/Logo';
 
 interface SidebarProps {
   currentView: AdminView;
@@ -23,9 +24,14 @@ export const Sidebar = ({ currentView, onChangeView, closeSidebar }: SidebarProp
 
   return (
     <div className="h-full flex flex-col pt-4 bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 transition-colors duration-500">
-      <div className="px-6 flex justify-between items-center mb-8">
-        <h2 className="font-serif text-xl font-bold">Admin Panel</h2>
-        <button onClick={closeSidebar} className="text-gray-500 dark:text-gray-400 dark:text-gray-800 dark:text-white hover:text-black dark:hover:text-gray-800 dark:text-white transition-colors">
+      <div className="px-6 flex justify-between items-start gap-3 mb-8">
+        <div className="min-w-0">
+          <LogoLockup className="h-7" />
+          <p className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
+            Admin Panel
+          </p>
+        </div>
+        <button onClick={closeSidebar} className="shrink-0 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors">
           <X size={20} />
         </button>
       </div>
