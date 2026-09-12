@@ -219,6 +219,34 @@ function shuffleShots<T>(items: T[]): T[] {
   return out;
 }
 
+/**
+ * Shuffle, then hold back any shot that would follow another shot of the
+ * same product, releasing it as soon as something else has gone out.
+ *
+ * Each product contributes one shot per uploaded photo, so a plain shuffle
+ * can deal three angles of the same phone in a row, which reads as a stuck
+ * slideshow rather than a slideshow. `alt` is the product name here, so it
+ * doubles as the "is this the same product" key. A catalogue of a single
+ * product degrades to the plain shuffled order, which is the best that can
+ * be done with nothing to interleave.
+ */
+function dealShots(items: ShowcaseShot[]): ShowcaseShot[] {
+  const out: ShowcaseShot[] = [];
+  const held: ShowcaseShot[] = [];
+
+  for (const shot of shuffleShots(items)) {
+    if (out.length > 0 && out[out.length - 1].alt === shot.alt) {
+      held.push(shot);
+      continue;
+    }
+    out.push(shot);
+    const ready = held.findIndex((h) => h.alt !== shot.alt);
+    if (ready !== -1) out.push(...held.splice(ready, 1));
+  }
+
+  return out.concat(held);
+}
+
 const CATEGORY_HOLD_MS = 1800;
 const CATEGORY_SLIDE_MS = 500;
 
@@ -240,7 +268,7 @@ const CategoryShowcase: React.FC<{ items: ShowcaseShot[] }> = ({ items }) => {
 
   const [frame, setFrame] = useState<{ shot: ShowcaseShot | null; lap: number }>(() => {
     if (items.length === 0) return { shot: null, lap: 0 };
-    const deck = shuffleShots(items);
+    const deck = dealShots(items);
     const shot = deck.shift() as ShowcaseShot;
     queueRef.current = deck;
     return { shot, lap: 0 };
@@ -250,7 +278,7 @@ const CategoryShowcase: React.FC<{ items: ShowcaseShot[] }> = ({ items }) => {
     if (items.length === 0) return;
     setFrame((f) => {
       let deck = queueRef.current;
-      if (deck.length === 0) deck = shuffleShots(items);
+      if (deck.length === 0) deck = dealShots(items);
       const [shot, ...rest] = deck;
       queueRef.current = rest;
       return { shot, lap: f.lap + 1 };
@@ -854,12 +882,14 @@ export const HomeView: React.FC = () => {
       categoryCounts: counts,
       // Capped at 8, two dot-pages of four, rather than the whole catalog.
       hotDeals: dealsPool.slice(0, 8),
-      // The "Shop by category" banner's sliding photo, real uploads only,
-      // one per product so the same item doesn't get two turns before
-      // everything else has had one.
+      // The "Shop by category" banner's sliding photo, real uploads only.
+      // Every photo on every product, not just each one's first: a product
+      // shot from three angles is three things worth seeing, and showing
+      // only cover images meant most of what Joe uploads never appeared on
+      // the homepage at all.
       productShots: available
         .filter((p) => p.images && p.images.length > 0)
-        .map((p) => ({ src: p.images[0], alt: p.name })),
+        .flatMap((p) => p.images.filter(Boolean).map((src) => ({ src, alt: p.name }))),
     };
   }, [products]);
 

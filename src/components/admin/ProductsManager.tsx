@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Search, Edit, Trash2, Flame, Zap, Ban, CheckCircle2, MapPin } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Flame, Zap, Ban, CheckCircle2, MapPin, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAppContext } from '../../store/AppContext';
 import { formatPrice } from '../../data';
@@ -270,7 +270,15 @@ export const ProductsManager = () => {
                   </div>
                 )}
 
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-gray-100 pt-2.5 dark:border-white/10">
+                {/* The desktop table has an "Uploaded" column for this; the
+                    phone cards had nowhere showing when a listing went up,
+                    which is the layout Joe actually runs the shop from. */}
+                <p className="mt-2.5 flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                  <Clock size={11} className="shrink-0" />
+                  Uploaded {formatWATDate(product.created_at || product.createdAt)}
+                </p>
+
+                <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-gray-100 pt-2.5 dark:border-white/10">
                   <button
                     type="button"
                     onClick={() => toggleStock(product)}

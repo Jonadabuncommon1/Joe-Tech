@@ -4,5 +4,8 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/|api/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/product", "destination": "/api/product-preview" },
+    { "source": "/((?!assets/|api/).*)", "destination": "/index.html" }
+  ]
 }
