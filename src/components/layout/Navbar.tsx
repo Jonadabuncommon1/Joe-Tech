@@ -81,13 +81,14 @@ export const Navbar = () => {
     <>
       <nav
         // The pill floats `fixed` near the very top on every page, so on home
-        // — where UrgentWhatsAppBanner occupies that space instead — its top
-        // offset needs the banner's exact height (h-9 = 2.25rem) added, or
-        // the two sit on top of each other regardless of scroll position.
+        // — where FreeDeliveryBanner + UrgentWhatsAppBanner occupy that space
+        // instead, stacked as one sticky unit — its top offset needs both
+        // banners' combined height (2 × h-9 = 4.5rem) added, or the pill
+        // sits on top of them regardless of scroll position.
         className={`fixed left-0 right-0 mx-auto z-50 transition-all duration-300 bg-jt-paper/90 dark:bg-jt-ink/90 backdrop-blur-xl border border-jt-ink/10 dark:border-white/10 rounded-2xl sm:rounded-full ${
           isScrolled
-            ? `${currentView === 'home' ? 'top-[2.75rem] sm:top-[3.25rem]' : 'top-2 sm:top-4'} shadow-xl py-2 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-7xl`
-            : `${currentView === 'home' ? 'top-12 sm:top-[3.75rem]' : 'top-3 sm:top-6'} shadow-lg py-2.5 sm:py-3.5 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-7xl`
+            ? `${currentView === 'home' ? 'top-20 sm:top-[5.5rem]' : 'top-2 sm:top-4'} shadow-xl py-2 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-7xl`
+            : `${currentView === 'home' ? 'top-[5.25rem] sm:top-24' : 'top-3 sm:top-6'} shadow-lg py-2.5 sm:py-3.5 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-7xl`
         }`}
       >
         <div className="w-full px-3.5 sm:px-6 flex justify-between items-center max-w-full">

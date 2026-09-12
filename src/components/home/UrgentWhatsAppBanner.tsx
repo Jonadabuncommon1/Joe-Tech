@@ -13,15 +13,20 @@ const formatPhone = (digits: string) =>
  * where the other WhatsApp entry points (FloatingWhatsApp, ChatWidget)
  * already live.
  *
+ * App.tsx renders this directly under FreeDeliveryBanner, both inside one
+ * shared `sticky top-0 z-40` wrapper (not sticky on its own here), so the
+ * two scroll together as a single pinned unit.
+ *
  * The Navbar pill is always `fixed` a few pixels from the top, on every page,
  * scrolled or not — a banner in normal document flow does not push it down.
  * So this has a single fixed height (`h-9`, never a responsive one) rather
- * than letting its content wrap, and Navbar.tsx adds exactly that height to
- * its own top offset whenever `currentView === 'home'`. If this banner's
- * height ever changes, that offset needs to change with it.
+ * than letting its content wrap, and Navbar.tsx adds exactly that height,
+ * plus FreeDeliveryBanner's, to its own top offset whenever
+ * `currentView === 'home'`. If either banner's height ever changes, that
+ * offset needs to change with it.
  */
 export const UrgentWhatsAppBanner: React.FC = () => (
-  <div className="sticky top-0 z-40 flex h-9 w-full items-center justify-center gap-x-2 overflow-x-auto whitespace-nowrap bg-jt-ink px-3 text-white sm:gap-x-3">
+  <div className="flex h-9 w-full items-center justify-center gap-x-2 overflow-x-auto whitespace-nowrap bg-jt-ink px-3 text-white sm:gap-x-3">
     <MessageCircle className="h-3.5 w-3.5 shrink-0 fill-[#25D366] text-jt-ink" />
     <span className="text-[11px] font-semibold sm:text-sm">
       <span className="hidden sm:inline">Need something urgently? </span>Chat us on WhatsApp

@@ -6,6 +6,7 @@ import { Footer } from './components/layout/Footer';
 import { WhatsAppCart } from './components/WhatsAppCart';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { UrgentWhatsAppBanner } from './components/home/UrgentWhatsAppBanner';
+import { FreeDeliveryBanner } from './components/home/FreeDeliveryBanner';
 import { Toaster } from 'react-hot-toast';
 import { SplashScreen } from './components/SplashScreen';
 
@@ -62,7 +63,21 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-gray-900 dark:text-gray-100 bg-transparent dark:bg-black overflow-x-hidden selection:bg-[#3626a7]/10 transition-colors duration-500 relative">
-      {currentView === 'home' && <UrgentWhatsAppBanner />}
+      {currentView === 'home' && (
+        // `fixed`, not `sticky`: <body> carries `overflow-x-hidden` (guards
+        // against horizontal bleed from decorative elements elsewhere on
+        // the page), and that alone disables `position: sticky` for every
+        // descendant on the page, no matter how deep this div is nested —
+        // it silently behaves as `static` and scrolls away instead of
+        // pinning. `fixed` isn't affected by an ancestor's `overflow`, only
+        // by `transform`/`filter`/`perspective`/`will-change`, none of
+        // which apply here, which is exactly why Navbar below already uses
+        // `fixed` rather than `sticky` for the same reason.
+        <div className="fixed left-0 right-0 top-0 z-40">
+          <FreeDeliveryBanner />
+          <UrgentWhatsAppBanner />
+        </div>
+      )}
       {currentView !== 'auth' && <Navbar />}
       <main className="flex-grow w-full">
         <React.Suspense fallback={<LoadingView />}>
