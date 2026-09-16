@@ -187,11 +187,19 @@ export const ProductDetailView = () => {
                {product.badge && <span className="text-[10px] uppercase font-bold bg-jt-lime text-white px-2 py-1 rounded shadow-sm">{product.badge}</span>}
             </div>
             
-            <h1 className="text-3xl lg:text-5xl font-serif text-[#281c7d] mb-4 font-bold tracking-tight">{product.name}</h1>
-            
+            {/* Both were a bare hex colour with no dark: pairing (#281c7d
+                a fixed dark blue, #000000 literal black), so both stayed
+                dark in dark mode too and nearly disappeared against this
+                page's black background, the same bug the description
+                block below had. brand-text and the price colour below now
+                match the same jt-blue/jt-mint swap already used for this
+                product's own name in the breadcrumb above, and for every
+                other product card's price on the site. */}
+            <h1 className="text-3xl lg:text-5xl font-serif brand-text mb-4 font-bold tracking-tight">{product.name}</h1>
+
             <div className="flex items-center space-x-4 mb-8">
               <div className="flex items-baseline gap-2.5">
-                <p className="text-3xl font-bold text-[#000000]">{formatPrice(activePrice)}</p>
+                <p className="text-3xl font-bold brand-text">{formatPrice(activePrice)}</p>
                 {!!activeOriginalPrice && activeOriginalPrice > activePrice && (
                   <p className="text-lg font-medium text-gray-400 line-through dark:text-gray-600">
                     {formatPrice(activeOriginalPrice)}
@@ -210,8 +218,13 @@ export const ProductDetailView = () => {
 
             {/* Was text-gray-300, nearly unreadable against the white card,
                 the opposite of the bold, high-contrast spec text every
-                other marketplace (Jumia, Temu) uses on its product page. */}
-            <div className="prose prose-sm text-jt-ink mb-10 leading-relaxed max-w-none font-medium">
+                other marketplace (Jumia, Temu) uses on its product page.
+                That fix landed before the theme toggle existed, so dark
+                mode had no way to be seen or tested yet: text-jt-ink alone
+                is near-black, and with no dark:text- companion it stayed
+                near-black on this card's near-black dark background too,
+                same illegible problem in the opposite direction. */}
+            <div className="prose prose-sm text-jt-ink dark:text-white mb-10 leading-relaxed max-w-none font-medium">
               <p>{product.description}</p>
               
               {(product.location || product.year || product.mileage) && (

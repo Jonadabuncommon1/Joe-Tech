@@ -262,7 +262,7 @@ export const CategoryView = () => {
                         clearSearch();
                         setActiveCategory(null);
                       }}
-                      className="mt-6 text-sm font-bold uppercase tracking-widest brand-text hover:text-[#281c7d]"
+                      className="mt-6 text-sm font-bold uppercase tracking-widest brand-text hover:text-[#281c7d] dark:hover:text-white"
                     >
                       Clear search
                     </button>

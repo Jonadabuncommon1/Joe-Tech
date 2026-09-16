@@ -54,7 +54,7 @@ export const PrivacyView = ({ onBack }: { onBack?: () => void }) => {
             if (onBack) onBack(); 
             else { setCurrentView('home'); window.scrollTo(0, 0); }
           }}
-          className="flex items-center space-x-2 text-sm font-semibold brand-text hover:text-[#281c7d] transition-colors mb-10 group"
+          className="flex items-center space-x-2 text-sm font-semibold brand-text hover:text-[#281c7d] dark:hover:text-white transition-colors mb-10 group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           <span>{onBack ? 'Back' : 'Back to Home'}</span>

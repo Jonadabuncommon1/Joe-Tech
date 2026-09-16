@@ -62,6 +62,24 @@ button, a, input, select, textarea {
   outline-offset: 2px;
 }
 
+/* Brand accent text: jt-blue in light mode, jt-mint in dark. Used across
+   ~12 files (active nav/sort states, prices, section links, the
+   product-detail breadcrumb) but was never actually defined anywhere in
+   this file, so every one of those was rendering with no colour of its
+   own, silently falling back to whatever it happened to inherit from an
+   ancestor. Some landed on a legible colour by accident, others (an
+   active Sort option with no other colour class alongside brand-text,
+   the admin dashboard's product-name column) did not, especially once
+   dark mode became reachable and there was a black background nearby
+   with no override to catch it. */
+.brand-text {
+  color: var(--color-jt-blue);
+}
+
+.dark .brand-text {
+  color: var(--color-jt-mint);
+}
+
 /* Circuit Grid Pattern */
 .circuit-grid {
   background-image: 

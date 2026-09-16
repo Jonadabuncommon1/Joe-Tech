@@ -186,7 +186,7 @@ export const DashboardHome = ({ onChangeView }: { onChangeView: (view: AdminView
           <button
             type="button"
             onClick={() => onChangeView('products')}
-            className="text-sm font-semibold brand-text hover:text-[#281c7d]"
+            className="text-sm font-semibold brand-text hover:text-[#281c7d] dark:hover:text-white"
           >
             Manage products →
           </button>
@@ -208,7 +208,7 @@ export const DashboardHome = ({ onChangeView }: { onChangeView: (view: AdminView
               <tbody>
                 {recent.map((p) => (
                   <tr key={p.id} className="border-b dark:border-white/10 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                    <td className="py-3 pr-4 font-bold text-[#281c7d]">{p.name}</td>
+                    <td className="py-3 pr-4 font-bold brand-text">{p.name}</td>
                     <td className="hidden py-3 pr-4 text-gray-800 dark:text-gray-200 sm:table-cell">{p.category}</td>
                     <td className="hidden py-3 pr-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap lg:table-cell">
                       {p.created_at ? new Date(p.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Legacy Upload'}
