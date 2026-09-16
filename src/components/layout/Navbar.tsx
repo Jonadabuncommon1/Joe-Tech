@@ -165,7 +165,7 @@ export const Navbar = () => {
             <button
               type="button"
               onClick={() => handleNavClick('wishlist')}
-              className="relative group flex items-center justify-center hover:scale-[1.05] transition-transform duration-200 p-1"
+              className="relative group hidden items-center justify-center hover:scale-[1.05] transition-transform duration-200 p-1 lg:flex"
               title="Your Wishlist"
               aria-label={`Your wishlist${wishlist.length > 0 ? `, ${wishlist.length} saved` : ''}`}
             >
@@ -185,11 +185,15 @@ export const Navbar = () => {
               )}
             </button>
 
-            {/* Cart Button */}
+            {/* Cart Button. Hidden below lg along with Wishlist above: on a
+                phone these two plus the theme toggle and hamburger made the
+                bar too crowded, so both move into the mobile drawer instead
+                (the drawer already has a Cart entry; Wishlist gained one
+                below to match). Unchanged on desktop, which had the room. */}
             <button
               type="button"
               onClick={() => setCartOpen(true)}
-              className="relative group flex items-center justify-center hover:scale-[1.05] transition-transform duration-200 p-1"
+              className="relative group hidden items-center justify-center hover:scale-[1.05] transition-transform duration-200 p-1 lg:flex"
               title="Your Cart"
             >
               <ShoppingBag size={20} strokeWidth={2.25} className="text-gray-700 dark:text-gray-300 group-hover:text-jt-blue dark:group-hover:text-jt-mint transition-colors" />
@@ -395,6 +399,14 @@ export const Navbar = () => {
                   className="text-left text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:text-jt-blue dark:hover:text-jt-mint transition-colors py-1.5 w-full"
                 >
                   Your Cart {cartItemsCount > 0 ? `(${cartItemsCount})` : ''}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleNavClick('wishlist')}
+                  className="text-left text-xs font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 hover:text-jt-blue dark:hover:text-jt-mint transition-colors py-1.5 w-full"
+                >
+                  Wishlist {wishlist.length > 0 ? `(${wishlist.length})` : ''}
                 </button>
 
                 <button
