@@ -41,12 +41,19 @@ interface AppContextProps {
   user: User | null;
   loadingAuth: boolean;
   loadingProducts: boolean;
+  theme: ThemeMode;
+  setTheme: (theme: ThemeMode) => void;
 }
+
+/** 'system' follows the visitor's device setting and keeps following it
+ *  live if that changes; 'light'/'dark' are an explicit override. */
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
 const CART_KEY = 'joetech_cart';
 const WISHLIST_KEY = 'joetech_wishlist';
+const THEME_KEY = 'joetech_theme';
 
 function readStored<T>(key: string, fallback: T): T {
   try {
@@ -169,6 +176,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // reload is the fastest way to lose a sale.
   const [cart, setCart] = useState<CartItem[]>(() => readStored<CartItem[]>(CART_KEY, []));
   const [wishlist, setWishlist] = useState<string[]>(() => readStored<string[]>(WISHLIST_KEY, []));
+  const [theme, setTheme] = useState<ThemeMode>(() => readStored<ThemeMode>(THEME_KEY, 'system'));
   const [cartOpen, setCartOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>(getInitialProductsFromStorage());
   const [searchQuery, setSearchQuery] = useState('');
@@ -243,6 +251,28 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => writeStored(CART_KEY, cart), [cart]);
   useEffect(() => writeStored(WISHLIST_KEY, wishlist), [wishlist]);
+  useEffect(() => writeStored(THEME_KEY, theme), [theme]);
+
+  // Applies the resolved theme to <html>. index.html's inline script already
+  // set this once before first paint (avoiding a flash of the wrong theme on
+  // load), this effect is what keeps it correct afterwards: when the
+  // visitor picks a theme in the UI, and, while on 'system', if their OS
+  // theme changes live while the tab is open.
+  useEffect(() => {
+    const root = document.documentElement;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const applyTheme = () => {
+      const shouldBeDark = theme === 'dark' || (theme === 'system' && media.matches);
+      root.classList.toggle('dark', shouldBeDark);
+    };
+
+    applyTheme();
+
+    if (theme !== 'system') return;
+    media.addEventListener('change', applyTheme);
+    return () => media.removeEventListener('change', applyTheme);
+  }, [theme]);
 
   useEffect(() => {
     const onHash = () => {
@@ -488,6 +518,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         user,
         loadingAuth,
         loadingProducts,
+        theme,
+        setTheme,
       }}
     >
       {children}

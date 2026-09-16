@@ -12,6 +12,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
+    <!-- Sets the dark class on <html> before anything else loads or paints,
+         reading the same joetech_theme key AppContext reads later. Doing
+         this here, not from a React effect, avoids a flash of the wrong
+         theme: a `useEffect` only runs after the first paint, so a returning
+         dark-mode visitor would see a flash of light mode every load, then
+         flip to dark a moment later. This runs synchronously, before the
+         page has drawn anything. Wrapped in try/catch since some contexts
+         (privacy modes, certain in-app browsers) throw on localStorage
+         access rather than just returning null. -->
+    <script>
+      try {
+        var storedTheme = localStorage.getItem('joetech_theme');
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (storedTheme === 'dark' || (storedTheme !== 'light' && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
+
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png" />

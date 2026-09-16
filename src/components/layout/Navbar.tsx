@@ -5,6 +5,7 @@ import { signOut, User as FirebaseUser } from 'firebase/auth';
 import { useAppContext } from '../../store/AppContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogoLockup } from '../brand/Logo';
+import { ThemeToggle } from './ThemeToggle';
 import toast from 'react-hot-toast';
 
 const getInitials = (u: FirebaseUser) => {
@@ -198,6 +199,8 @@ export const Navbar = () => {
                 </span>
               )}
             </button>
+
+            <ThemeToggle />
 
             {/* Desktop User Avatar / Dropdown */}
             <div className="hidden lg:block relative" ref={dropdownRef}>
