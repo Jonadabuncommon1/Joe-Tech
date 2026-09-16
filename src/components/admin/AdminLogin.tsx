@@ -22,7 +22,14 @@ export const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex transition-colors duration-500 relative">
+    // dark-only, same as AdminLayout once signed in, and for the same
+    // reason: this puts the `dark` class an admin visitor never gets from
+    // the storefront's own theme choice. Unlike AdminLayout's shell, this
+    // root previously had no dark: background at all (only the desktop
+    // image panel below did), so the form itself stayed on the light
+    // #F9FAFB background no matter what, this fixes that gap directly
+    // rather than leaving a light:/dark: pair with nothing to switch.
+    <div className="dark min-h-screen bg-[#000000] flex relative">
 
       {/* Left Image Section (Hidden on Mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-[#3626a7] items-center justify-center overflow-hidden">
@@ -111,13 +118,18 @@ export const AdminLogin = () => {
             </button>
           </form>
 
+          {/* hover:brand-text / dark:hover:brand-text weren't real Tailwind
+              utilities (brand-text is a plain CSS class, not a colour value
+              those prefixes can apply to), so hovering never actually did
+              anything. hover:text-jt-mint is the same "brighten on hover"
+              treatment used everywhere else against a dark background. */}
           <button
             type="button"
             onClick={() => {
               window.location.hash = '';
               setCurrentView('home');
             }}
-            className="mt-8 text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-800 dark:text-white hover:brand-text dark:hover:brand-text transition-colors flex items-center justify-center lg:justify-start w-full lg:w-auto"
+            className="mt-8 text-sm font-medium text-gray-400 hover:text-jt-mint transition-colors flex items-center justify-center lg:justify-start w-full lg:w-auto"
           >
             ← Return to Marketplace
           </button>

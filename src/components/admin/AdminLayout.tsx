@@ -60,7 +60,17 @@ export const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] dark:bg-[#000000] text-gray-900 dark:text-gray-100 flex font-sans z-50 transition-colors duration-500">
+    // The whole admin area is dark-only, on purpose, regardless of whatever
+    // theme a customer has chosen on the storefront: Tailwind's `dark:`
+    // variant here (see index.css) triggers off a `dark` class anywhere in
+    // the ancestor chain, not just <html>, so putting it here activates
+    // every dark: class already written throughout every admin component,
+    // Sidebar, DashboardHome, ProductsManager, and the rest, without
+    // touching any of them. The light-mode base classes those still carry
+    // (bg-white, text-gray-900, etc.) are dead from here down: dark always
+    // wins once this class is present, so they're harmless to leave as
+    // they are rather than stripping every one of them individually.
+    <div className="dark min-h-screen bg-[#000000] text-gray-100 flex font-sans z-50">
       {/* Desktop reopen button. On phones the sticky bar below carries it, so
           this one would only float over the content. */}
       {!sidebarOpen && (
