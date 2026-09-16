@@ -157,8 +157,12 @@ export const CategoryView = () => {
                 <ChevronDown size={14} className={`transition-transform duration-200 ${isSortOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Menu */}
-              <div className={`glass-card absolute right-0 top-full mt-2 w-48 rounded-xl transition-all z-50 overflow-hidden border border-white/10 shadow-lg dark:bg-[#1a1a1a] ${isSortOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
+              {/* Dropdown Menu. Was `glass-card`, a class that doesn't exist
+                  anywhere in the CSS, so in light mode this panel had no
+                  background at all and the product photos underneath showed
+                  straight through it. Solid bg-white (matching the Sort
+                  button and every other panel on this page) fixes that. */}
+              <div className={`absolute right-0 top-full mt-2 w-48 rounded-xl transition-all z-50 overflow-hidden border border-gray-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] shadow-lg ${isSortOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2'}`}>
                 <button onClick={() => { setSortMode('default'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm hover:bg-[#ece9fa] dark:hover:bg-[#3626a7]/20 ${sortMode === 'default' ? 'font-bold brand-text' : 'text-gray-600 dark:text-gray-800 dark:text-white'}`}>Default</button>
                 <div className="h-px w-full bg-white/5" />
                 <button onClick={() => { setSortMode('price-asc'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm hover:bg-[#ece9fa] dark:hover:bg-[#3626a7]/20 ${sortMode === 'price-asc' ? 'font-bold brand-text' : 'text-gray-600 dark:text-gray-800 dark:text-white'}`}>Price: Low to High</button>
